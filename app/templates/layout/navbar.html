@@ -1,0 +1,25 @@
+<nav class="bg-white shadow-lg sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-6">
+            <div class="text-3xl font-bold text-blue-600">
+                <a href="{{ url_for('view_personas') }}" class="hover:text-blue-700 transition-colors">
+                    LangPractice AI
+                </a>
+            </div>
+            <div class="flex space-x-2">
+                <a href="{{ url_for('view_personas') }}" 
+                   class="px-6 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium text-lg">
+                    Personas
+                </a>
+                <a href="{{ url_for('view_language_profiles') }}" 
+                   class="px-6 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium text-lg">
+                    Language Profiles
+                </a>
+                <a href="{{ url_for('view_settings') }}" 
+                   class="px-6 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium text-lg">
+                    Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
