@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Language Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        {% include "layout/navbar.html" %}
+        <main class="container mx-auto px-6 pt-12 pb-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script>
+        document.body.addEventListener('click', function (event) {
+            const button = event.target.closest('[data-toggle-password-visibility]');
+
+            if (!button) return;
+
+            const container = button.parentElement;
+            const input = container.querySelector('input');
+            const eyeIcon = button.querySelector('.eye-icon');
+            const eyeSlashIcon = button.querySelector('.eye-slash-icon');
+
+            if (!input) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeSlashIcon.classList.remove('hidden');
+            } else {
+                input.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeSlashIcon.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

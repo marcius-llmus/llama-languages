@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Personas</h1>
+        </div>
+
+        {% include "personas/partials/persona_form.html" %}
+        
+        {% include "personas/partials/persona_list.html" %}
+    </div>
+{% endblock %}
