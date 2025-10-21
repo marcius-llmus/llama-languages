@@ -54,7 +54,7 @@ async def view_edit_persona_form(
     return {"persona": persona}
 
 
-@router.put("/{persona_id}", name="update_persona")
+@router.patch("/{persona_id}", name="update_persona")
 @htmx("personas/partials/persona_item")
 async def update_persona(
     request: Request,
