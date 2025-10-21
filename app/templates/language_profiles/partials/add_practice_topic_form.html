@@ -1,0 +1,18 @@
+<form
+    hx-post="{{ url_for('add_practice_topic', profile_id=language_profile.id) }}"
+    hx-target="#topic-list-{{ language_profile.id }}"
+    hx-swap="beforeend"
+    hx-on::after-request="this.reset()"
+    class="flex items-center space-x-2"
+>
+    <input 
+        type="text" 
+        name="name" 
+        required
+        class="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="New topic name..."
+    />
+    <button type="submit" class="text-blue-600 hover:text-blue-700 font-semibold">
+        + Add Topic
+    </button>
+</form>
