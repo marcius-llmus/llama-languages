@@ -1,0 +1,13 @@
+<div id="topic-{{ topic.id }}" class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+    <span class="text-gray-700">{{ topic.name }}</span>
+    <button 
+        hx-delete="{{ url_for('delete_practice_topic', topic_id=topic.id) }}"
+        hx-target="#topic-{{ topic.id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Are you sure you want to delete this topic?"
+        class="text-gray-400 hover:text-red-600">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+</div>
