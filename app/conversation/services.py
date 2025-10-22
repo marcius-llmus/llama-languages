@@ -2,6 +2,8 @@ from typing import AsyncGenerator
 import uuid
 
 from fastapi import WebSocketDisconnect
+
+from app.conversation.enums import ConversationEventType
 from app.core.templating import templates
 from app.conversation.connection_manager import WebSocketConnectionManager
 from app.conversation.constants import STT_NOT_IMPLEMENTED_FALLBACK
@@ -35,9 +37,9 @@ class ConversationService:
 
         async for event in handler.stream_events():
             if isinstance(event, TextChunkGenerated):
-                yield {"type": "text_chunk", "data": event.delta}
+                yield {"type": ConversationEventType.TEXT_CHUNK, "data": event.delta}
             elif isinstance(event, AudioReady):
-                yield {"type": "audio_ready", "data": {"audio_url": event.audio_url}}
+                yield {"type": ConversationEventType.AUDIO_READY, "data": {"audio_url": event.audio_url}}
 
 
 class WebSocketOrchestratorService:
@@ -54,18 +56,16 @@ class WebSocketOrchestratorService:
 
                 turn_id = str(uuid.uuid4())
 
-                user_bubble_html = self._render_user_message(user_message, turn_id)
-                await manager.send_html(user_bubble_html)
+                await self._render_user_bubble_with_message(user_message, manager)
+                await self._render_ai_bubble_place_holder(turn_id, manager) # will be empty at first
 
                 async for chunk in self.conversation_service.process_turn_streaming(
                     user_message=user_message,
                     persona_id=data["persona_id"],
-                    focus_topic_id=data.get("focus_topic_id"),
+                    focus_topic_id=data["focus_topic_id"],
                     language_profile_id=language_profile_id,
                 ):
-                    html_fragment = self._render_chunk(chunk, turn_id)
-                    if html_fragment:
-                        await manager.send_html(html_fragment)
+                    await self._render_ai_message_chunk_in_place_holder(chunk, turn_id, manager)
 
         except WebSocketDisconnect:
             print("Client disconnected. Connection handled gracefully.")
@@ -79,23 +79,30 @@ class WebSocketOrchestratorService:
         raise ValueError(STT_NOT_IMPLEMENTED_FALLBACK)
 
     @staticmethod
-    def _render_user_message(message: str, turn_id: str) -> str:
-        user_bubble = templates.get_template(
+    async def _render_user_bubble_with_message(message: str, manager: WebSocketConnectionManager):
+        template = templates.get_template(
             "conversation/partials/user_message_bubble.html"
         ).render({"message": message})
-        ai_placeholder = templates.get_template(
-            "conversation/partials/ai_message_bubble.html"
-        ).render({"turn_id": turn_id})
-        return user_bubble + "\n" + ai_placeholder
+        await manager.send_html(template)
 
     @staticmethod
-    def _render_chunk(chunk: dict, turn_id: str) -> str:
-        if chunk["type"] == "text_chunk":
-            return templates.get_template(
+    async def _render_ai_bubble_place_holder(turn_id: str, manager: WebSocketConnectionManager):
+        template = templates.get_template(
+            "conversation/partials/ai_message_bubble.html"
+        ).render({"turn_id": turn_id})
+        await manager.send_html(template)
+
+    @staticmethod
+    async def _render_ai_message_chunk_in_place_holder(chunk: dict, turn_id: str, manager: WebSocketConnectionManager):
+        if chunk["type"] == ConversationEventType.TEXT_CHUNK:
+            template = templates.get_template(
                 "conversation/partials/streaming_token.html"
             ).render({"token": chunk["data"], "turn_id": turn_id})
-        elif chunk["type"] == "audio_ready":
-            return templates.get_template(
+        elif chunk["type"] == ConversationEventType.AUDIO_READY:
+            template = templates.get_template(
                 "conversation/partials/audio_player.html"
             ).render({"audio_url": chunk["data"]["audio_url"], "turn_id": turn_id})
-        return ""
+        else:
+            raise ValueError(f"Unknown message type: {chunk['type']}")
+
+        await manager.send_html(template)
