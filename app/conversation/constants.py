@@ -1,0 +1,1 @@
+STT_NOT_IMPLEMENTED_FALLBACK = "STT not implemented. User said something."
