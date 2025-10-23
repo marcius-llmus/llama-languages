@@ -1,31 +1,65 @@
-<div hx-swap-oob="innerHTML:#user-message-feedback-{{ turn_id }}">
-{% if feedback %}
-<button class="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium {{ 'bg-red-500 hover:bg-red-600 text-white' if feedback_level == 'red' else 'bg-yellow-400 hover:bg-yellow-500 text-gray-900' }} shadow-sm hover:shadow transition-all duration-150">
-    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-        {% if feedback_level == 'red' %}
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-        {% else %}
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-        {% endif %}
-    </svg>
-    <span>{{ 'Correction' if feedback_level == 'red' else 'Suggestion' }}</span>
-</button>
-<div class="hidden group-hover:block absolute right-0 bottom-full mb-2.5 w-80 bg-white border {{ 'border-red-200' if feedback_level == 'red' else 'border-yellow-200' }} rounded-lg p-4 shadow-xl z-20 animate-in fade-in slide-in-from-bottom-1 duration-200">
-    <div class="flex items-start space-x-3">
-        <div class="w-8 h-8 rounded-full {{ 'bg-red-50' if feedback_level == 'red' else 'bg-yellow-50' }} flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 {{ 'text-red-500' if feedback_level == 'red' else 'text-yellow-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {% if feedback_level == 'red' %}
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                {% else %}
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+<div hx-swap-oob="innerHTML:#user-message-feedback-{{ turn_id }}" x-data="{ showFeedback: false }">
+    {% if feedback %}
+        <div class="flex justify-end items-center gap-2 mt-2">
+            <button
+                @click="showFeedback = !showFeedback"
+                class="px-3 py-1.5 text-white text-sm font-medium rounded transition-colors
+                    {% if feedback_level == 'red' %} bg-red-500 hover:bg-red-600
+                    {% elif feedback_level == 'yellow' %} bg-amber-500 hover:bg-amber-600
+                    {% else %} bg-green-500 hover:bg-green-600 {% endif %}"
+                title="View Corrections & Tips"
+            >
+                Feedback
+            </button>
+        </div>
+
+        <!-- Feedback Popup - Absolutely Positioned -->
+        <div
+            x-show="showFeedback"
+            x-transition
+            @click.away="showFeedback = false"
+            class="absolute top-0 left-0 right-0 bg-white text-gray-900 rounded-lg p-5 border-2 shadow-xl z-50 feedback-popup
+                {% if feedback_level == 'red' %} border-red-500
+                {% elif feedback_level == 'yellow' %} border-amber-500
+                {% else %} border-green-500 {% endif %}"
+            style="display: none;"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold">Feedback & Corrections</h3>
+                <button @click="showFeedback = false" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                {% if feedback.type == 'correction' %}
+                <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-bold text-red-800 text-base">Correction</span>
+                    </div>
+                    <p class="text-red-900 text-base">{{ feedback.feedback }}</p>
+                </div>
+                {% elif feedback.type == 'suggestion' %}
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-bold text-yellow-800 text-base">Suggestion</span>
+                    </div>
+                    <p class="text-yellow-900 text-base">{{ feedback.feedback }}</p>
+                </div>
+                {% elif feedback.type == 'tip' %}
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-bold text-blue-800 text-base">Tip</span>
+                    </div>
+                    <p class="text-blue-900 text-base">{{ feedback.feedback }}</p>
+                </div>
                 {% endif %}
-            </svg>
+            </div>
         </div>
-        <div>
-            <p class="text-sm font-semibold text-gray-900 mb-1">{{ feedback.type|title if feedback.type else 'Feedback' }}</p>
-            <p class="text-sm text-gray-700">{{ feedback.reasoning }}</p>
-        </div>
-    </div>
-</div>
-{% endif %}
+    {% else %}
+        <!-- No feedback, render an empty div to remove spinner -->
+        <div class="mt-2"></div>
+    {% endif %}
 </div>

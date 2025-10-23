@@ -1,23 +1,31 @@
-<div hx-swap-oob="beforeend:#chat-log" id="user-message-{{ turn_id }}" class="flex items-start space-x-3 justify-end">
-    <div class="flex-1 max-w-lg flex flex-col items-end">
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg rounded-tr-none px-4 pt-3 pb-11 shadow-sm relative min-w-[150px]">
-            <p id="user-message-text-{{ turn_id }}" class="min-h-[24px]">{{ message }}</p> {# For audio, this starts empty and is filled by streaming tokens #}
-            {% if not is_conversational %}
-            <div id="user-audio-container-{{ turn_id }}" class="mt-1">
-            </div>
-            {% endif %}
-            {% if is_conversational %}
-            <div id="user-message-feedback-{{ turn_id }}" class="absolute bottom-2.5 right-2.5 group">
-                <div class="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-700 bg-opacity-90 text-white shadow-sm">
-                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Analyzing...</span>
+<div hx-swap-oob="beforeend:#chat-history > .space-y-8">
+    <div class="flex items-start gap-4 justify-end">
+        <div class="flex-1 max-w-3xl flex flex-col items-end">
+            <div class="bg-blue-600 text-white rounded-lg p-5 w-full relative">
+                <p id="user-message-text-{{ turn_id }}" class="text-lg leading-relaxed">
+                    {% if message %}
+                        {{ message }}
+                    {% else %}
+                        <span class="italic text-gray-300">Transcribing...</span>
+                    {% endif %}
+                </p>
+                <div id="user-audio-container-{{ turn_id }}"></div>
+                <div id="user-message-feedback-{{ turn_id }}" class="flex justify-end items-center gap-2 mt-2">
+                    {% if is_conversational %}
+                        <!-- For text messages, spinner is removed on first AI response chunk -->
+                    {% else %}
+                        <!-- For audio, show spinner until feedback is generated -->
+                        <button class="px-3 py-1.5 bg-blue-700 text-white text-sm font-medium rounded cursor-wait">
+                            <svg class="w-4 h-4 animate-spin inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
         </div>
-        <span class="text-xs text-gray-500 mt-1 mr-1">{{ timestamp or "now" }}</span>
+        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+            U
+        </div>
     </div>
 </div>

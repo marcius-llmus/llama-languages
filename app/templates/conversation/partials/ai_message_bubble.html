@@ -1,13 +1,15 @@
-<div hx-swap-oob="beforeend:#chat-log" id="ai-message-container-{{ turn_id }}" class="flex items-start space-x-3">
-    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
-        <span class="text-white font-semibold text-sm">{{ persona_initial or "C" }}</span>
-    </div>
-    <div class="flex-1 max-w-lg">
-        <div id="ai-message-content-{{ turn_id }}" class="bg-white rounded-lg rounded-tl-none px-4 py-3 shadow-sm border border-gray-200">
-            <p id="ai-message-streaming-{{ turn_id }}" class="text-gray-800"></p>
+<div hx-swap-oob="beforeend:#chat-history > .space-y-8">
+    <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold">
+            {{ persona_initial }}
         </div>
-        <div id="ai-audio-container-{{ turn_id }}" class="mt-1">
-            <!-- Audio player will be inserted here -->
+        <div class="flex-1 max-w-3xl">
+            <div class="bg-gray-100 rounded-lg p-5">
+                <p id="ai-message-streaming-{{ turn_id }}" class="text-gray-900 text-lg leading-relaxed"></p>
+                <div id="ai-audio-container-{{ turn_id }}" class="flex justify-end mt-2">
+                    <!-- Audio player will be swapped here -->
+                </div>
+            </div>
         </div>
     </div>
 </div>

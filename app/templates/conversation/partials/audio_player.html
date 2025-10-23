@@ -1,5 +1,25 @@
 {% if audio_url %}
-<div hx-swap-oob="innerHTML:#ai-audio-container-{{ turn_id }}">
-    <audio src="{{ audio_url }}" controls class="w-48 h-8 opacity-80"></audio>
+<div hx-swap-oob="innerHTML:#ai-audio-container-{{ turn_id }}" x-data="{
+    audio: new Audio('{{ audio_url }}'),
+    isPlaying: false,
+    play() {
+        this.audio.play();
+        this.isPlaying = true;
+    },
+    pause() {
+        this.audio.pause();
+        this.isPlaying = false;
+    },
+    toggle() {
+        this.isPlaying ? this.pause() : this.play();
+    },
+    init() {
+        this.audio.onended = () => { this.isPlaying = false };
+    }
+}" x-init="init()">
+    <button @click="toggle()" class="p-2 rounded-full hover:bg-gray-200 text-purple-600 transition-colors">
+        <svg x-show="!isPlaying" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg x-show="isPlaying" style="display: none;" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
 </div>
 {% endif %}
