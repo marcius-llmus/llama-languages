@@ -5,18 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Language Practice</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
     <style>
         body {
-            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%);
             min-height: 100vh;
+            margin: 0;
+        }
+        
+        /* Custom scrollbar */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #93c5fd;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+        
+        /* Smooth animations */
+        .feedback-popup {
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 <body>
     <div>
         {% include "layout/navbar.html" %}
-        <main class="container mx-auto px-6 pt-12 pb-8">
+        <main class="container mx-auto px-6 py-6 h-[calc(100vh-7rem)] overflow-hidden">
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -44,5 +89,6 @@
             }
         });
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
