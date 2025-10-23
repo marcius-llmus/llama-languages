@@ -1,19 +1,18 @@
 {% if audio_url %}
-<div hx-swap-oob="innerHTML:#ai-audio-container-{{ turn_id }}" x-data="{
-    audio: null,
+<div id="ai-audio-container-{{ turn_id }}" hx-swap-oob="outerHTML" x-data="{
     playing: false,
-    toggle() {
-        this.playing ? this.pause() : this.play();
+    audio: null,
+    init() {
+        this.audio = new Audio('{{ audio_url }}');
+        this.audio.onplay = () => { this.playing = true };
+        this.audio.onpause = () => { this.playing = false };
+        this.audio.onended = () => { this.playing = false };
     },
-    play() { this.audio.play(); },
-    pause() { this.audio.pause(); }
-}" x-init="
-    audio = new Audio('{{ audio_url }}');
-    audio.onplay = () => { playing = true };
-    audio.onpause = () => { playing = false };
-    audio.onended = () => { playing = false };
-">
-    <button @click="toggle()" class="p-2 rounded-full hover:bg-gray-200 text-purple-600 transition-colors">
+    toggle() {
+        this.playing ? this.audio.pause() : this.audio.play();
+    }
+}">
+    <button @click="toggle" class="p-2 rounded-full hover:bg-gray-200 text-purple-600 transition-colors">
         <svg x-show="!playing" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         <svg x-show="playing" style="display: none;" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
     </button>

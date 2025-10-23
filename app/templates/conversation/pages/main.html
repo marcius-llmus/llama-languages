@@ -172,13 +172,11 @@
         function streamingSourceEnded() {
             streamingSourceQueue.shift();
             if (streamingSourceQueue.length === 0 && streamingAudioQueue.length === 0) {
-                console.log('Audio finished playing');
                 messageInput.disabled = false;
                 sendButton.disabled = false;
                 micButton.disabled = false;
                 messageInput.placeholder = 'Type your message in {{ language_profile.target_language }}...';
                 messageInput.focus();
-                return;
             }
         }
 
