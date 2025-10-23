@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
@@ -10,6 +11,11 @@ from app.language_profiles.routes.htmx import router as language_profiles_router
 from app.personas.routes.htmx import router as personas_router
 from app.settings.routes.htmx import router as settings_router
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 app = FastAPI()
 

@@ -1,1 +1,1 @@
-STT_NOT_IMPLEMENTED_FALLBACK = "STT not implemented. User said something."
+LOADING_TEXT = "Loading your audio message..."

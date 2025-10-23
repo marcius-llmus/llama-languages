@@ -1,0 +1,5 @@
+{% if audio_url %}
+<div hx-swap-oob="innerHTML:#user-audio-container-{{ turn_id }}">
+    <audio src="{{ audio_url }}" controls class="w-full h-8 opacity-80 mt-2"></audio>
+</div>
+{% endif %}

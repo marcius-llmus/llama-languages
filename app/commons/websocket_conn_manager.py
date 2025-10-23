@@ -15,3 +15,6 @@ class WebSocketConnectionManager:
 
     async def send_html(self, html: str):
         await self._websocket.send_text(html)
+
+    async def send_bytes(self, data: bytes):
+        await self._websocket.send_bytes(data)

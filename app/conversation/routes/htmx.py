@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, Request, WebSocket
 from fastapi.responses import HTMLResponse
 
+from app.commons.websocket_conn_manager import WebSocketConnectionManager
 from app.core.templating import templates
 from app.language_profiles.dependencies import get_language_profile_service
 from app.language_profiles.services import LanguageProfileService
 from app.personas.dependencies import get_persona_service
 from app.personas.services import PersonaService
-from app.conversation.connection_manager import WebSocketConnectionManager
-from app.conversation.dependencies import get_websocket_orchestrator_service
-from app.conversation.services import WebSocketOrchestratorService
+from app.conversation.services import ConversationService
+from app.conversation.dependencies import get_conversation_service
+from app.conversation.presentation import WebSocketOrchestrator
 
 router = APIRouter()
 
@@ -25,23 +26,28 @@ async def view_conversation_page(
     persona_service: PersonaService = Depends(get_persona_service),
 ):
     language_profile = language_profile_service.get_language_profile(language_profile_id)
-    personas = persona_service.list_personas()
+    # This is a temporary mock to align with the new frontend design.
+    # The language_profile should eventually have a direct relationship to a persona.
+    persona = persona_service.list_personas()[0]
     context = {
         "request": request,
         "language_profile": language_profile,
-        "personas": personas,
+        "persona": persona,
     }
     return templates.TemplateResponse("conversation/pages/main.html", context)
 
 
+# note: this ws has no authorization of personas etc. by user
 @router.websocket("/ws/{language_profile_id}")
 async def conversation_websocket(
     websocket: WebSocket,
     language_profile_id: int,
-    service: WebSocketOrchestratorService = Depends(
-        get_websocket_orchestrator_service
-    ),
+    conversation_service: ConversationService = Depends(get_conversation_service), # todo check db conn
 ):
     manager = WebSocketConnectionManager(websocket)
     await manager.connect()
-    await service.handle_connection(manager, language_profile_id)
+    orchestrator = WebSocketOrchestrator(
+        conversation_service=conversation_service,
+        manager=manager,
+    )
+    await orchestrator.handle_connection(language_profile_id)

@@ -1,6 +1,17 @@
 from enum import StrEnum
 
 
+class FeedbackType(StrEnum):
+    OK = "ok"
+    CORRECTION = "correction"
+    TIP = "tip"
+    SUGGESTION = "suggestion"
+
+
 class ConversationEventType(StrEnum):
-    TEXT_CHUNK = "text_chunk"
-    AUDIO_READY = "audio_ready"
+    AI_TEXT_CHUNK_GENERATED = "ai_text_chunk_generated"
+    AI_AUDIO_CHUNK_GENERATED = "ai_audio_chunk_generated"
+    AI_AUDIO_READY = "ai_audio_ready"
+    AUDIO_MESSAGE = "audio_message"
+    USER_TRANSCRIPTION_CHUNK_GENERATED = "user_transcription_chunk_generated"
+    FEEDBACK_GENERATED = "feedback_generated"

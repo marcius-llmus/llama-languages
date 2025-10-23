@@ -1,5 +1,5 @@
 {% if audio_url %}
-<div hx-swap-oob="beforeend:#ai-message-content-{{ turn_id }}">
-    <audio controls class="mt-2 w-full" src="{{ audio_url }}" autoplay></audio>
+<div hx-swap-oob="innerHTML:#ai-audio-container-{{ turn_id }}">
+    <audio src="{{ audio_url }}" controls class="w-48 h-8 opacity-80"></audio>
 </div>
 {% endif %}

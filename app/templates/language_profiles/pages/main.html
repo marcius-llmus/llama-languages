@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-800">Language Profiles</h1>
-    </div>
-
+<div class="max-w-7xl mx-auto h-full overflow-y-auto no-scrollbar">
     {% include "language_profiles/partials/language_profile_form.html" %}
     
     {% include "language_profiles/partials/language_profile_list.html" %}

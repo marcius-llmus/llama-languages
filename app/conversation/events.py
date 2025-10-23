@@ -1,34 +1,67 @@
 from llama_index.core.llms import ChatMessage
 from workflows.events import Event
 
+from app.conversation.schemas import Feedback
+
+class UserTranscriptionChunkGenerated(Event):
+    """Event carrying a single token from the streaming transcription."""
+
+    delta: str
+
+
+class AudioInputReceived(Event):
+    """Indicates that an audio message has been received and is ready for transcription streaming."""
+    audio_bytes: bytes
+    persona_id: int
+    language_profile_id: int
+
+
+class UserMessageReady(Event):
+    """Indicates the user's message is processed (transcribed if needed) and ready for the LLM."""
+    text: str
+    persona_id: int
+    language_profile_id: int
+
 
 class PromptReady(Event):
     """Carries the fully constructed prompt and voice ID."""
 
     messages: list[ChatMessage]
     voice_id: str | None
+    user_message_text: str
+    persona_id: int
+    language_profile_id: int
 
 
-class TextChunkGenerated(Event):
+class FeedbackGenerated(Event):
+    """Carries the feedback object for the user's last message."""
+
+    feedback: Feedback
+
+
+class AITextChunkGenerated(Event):
     """Event carrying a single token from the LLM's streaming response."""
 
     delta: str
 
 
 class FullResponseGenerated(Event):
-    """Event carrying the full, final text response from the LLM."""
+    """Event carrying the full, final text response from the LLM and the generated audio."""
 
-    full_response: str
-    voice_id: str
+    ai_response_text: str
+    user_message_text: str
+    audio_bytes: bytes
+    persona_id: int
+    language_profile_id: int
 
 
-class AudioReady(Event):
+class AIAudioReady(Event):
     """Event carrying the URL to the generated audio file."""
 
     audio_url: str
 
 
-class AudioGenerated(Event):
-    """Carries the full response after audio has been generated."""
+class AIAudioChunkGenerated(Event):
+    """Event carrying a chunk of generated audio data."""
 
-    full_response: str
+    chunk: bytes
