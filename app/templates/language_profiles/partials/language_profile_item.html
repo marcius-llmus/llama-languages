@@ -41,7 +41,7 @@
         {% include "language_profiles/partials/add_practice_topic_form.html" %}
 
         <div class="flex justify-end mt-4">
-            <a href="{{ url_for('view_conversation') }}" 
+            <a href="{{ url_for('view_conversation', language_profile_id=language_profile.id) }}" 
                class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
                 Practice
             </a>

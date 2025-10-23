@@ -1,95 +1,234 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Conversation Practice</h1>
-        <p class="text-gray-600 text-lg">Spanish A2 Grammar</p>
-    </div>
+<div class="max-w-7xl mx-auto h-full flex flex-col">
+    <!-- Session Info Bar -->
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <label for="persona-select" class="block text-sm font-semibold text-gray-700 mb-2">
-                Select Persona
-            </label>
-            <select
-                id="persona-select"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-                <option>Friendly Barista</option>
-                <option>Strict Customs Officer</option>
-                <option>Tech Support Agent</option>
-            </select>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <label for="focus-select" class="block text-sm font-semibold text-gray-700 mb-2">
-                Practice Focus
-            </label>
-            <select
-                id="focus-select"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-                <option>Free Conversation</option>
-                <option>Ser vs. Estar</option>
-                <option>Preterite Tense</option>
-                <option>Subjunctive Mood</option>
-            </select>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-md p-6 flex items-center justify-center">
-            <button class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
-                End Session
-            </button>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2">
-            <div class="bg-white rounded-xl shadow-md p-6 h-[600px] flex flex-col">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Chat</h2>
-                <div class="flex-1 overflow-y-auto space-y-4 mb-4">
-                    <div class="flex items-start">
-                        <div class="bg-blue-100 rounded-lg p-4 max-w-[80%]">
-                            <p class="text-sm font-semibold text-blue-900 mb-1">AI (Friendly Barista)</p>
-                            <p class="text-gray-800">¡Hola! Bienvenido a la cafetería. ¿Qué te gustaría tomar hoy?</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start justify-end">
-                        <div class="bg-gray-100 rounded-lg p-4 max-w-[80%]">
-                            <p class="text-sm font-semibold text-gray-900 mb-1">You</p>
-                            <p class="text-gray-800">Hola, quiero un café con leche, por favor.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start">
-                        <div class="bg-blue-100 rounded-lg p-4 max-w-[80%]">
-                            <p class="text-sm font-semibold text-blue-900 mb-1">AI (Friendly Barista)</p>
-                            <p class="text-gray-800">Perfecto. ¿Grande o pequeño?</p>
-                        </div>
-                    </div>
+    <div class="mb-4 flex-shrink-0">
+        <div class="flex items-center justify-between bg-white rounded-lg shadow-md px-6 py-4 border-l-4 border-blue-600">
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2 min-w-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                    </svg>
+                    <span class="font-medium text-gray-700">Language:</span>
+                    <span class="text-gray-900">{{ language_profile.target_language or "Spanish" }}</span>
                 </div>
+                <div class="flex items-center space-x-2 min-w-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-medium text-gray-700">Persona:</span>
+                    <span class="text-gray-900">{{ persona.name or "Carlos" }}</span>
+                </div>
+                <div class="flex items-center space-x-2 min-w-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="font-medium text-gray-700">Profile:</span>
+                    <span class="text-gray-900 truncate">{{ language_profile.name or "Practice" }}</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2">
+                    <label class="font-medium text-gray-700">Focus:</label>
+                    <select id="focus-select" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                        <option value="">Free Conversation</option>
+                        <option value="1">Ordering Food</option>
+                        <option value="2">Travel Directions</option>
+                        <option value="3">Business Meeting</option>
+                    </select>
+                </div>
+                <button onclick="window.location.href='{{ url_for('view_language_profiles') }}'" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-1.5 text-sm rounded-lg shadow-md transition">
+                    End Session
+                </button>
+            </div>
+        </div>
+    </div>
 
-                <div class="border-t border-gray-200 pt-4">
-                    <div class="flex items-center space-x-4">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg shadow transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+    <!-- Single Chat Container -->
+    <div id="conversation-container" hx-ext="ws" ws-connect="/conversation/ws/{{ language_profile.id }}" class="bg-gradient-to-b from-slate-50 to-gray-100 rounded-xl shadow-lg overflow-hidden flex flex-col flex-1">
+        <!-- Messages -->
+        <div id="chat-log" class="flex-1 overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+            <!-- AI Message -->
+            <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                    <span class="text-white font-semibold text-sm">{{ persona.name[0] if persona and persona.name else "C" }}</span>
+                </div>
+                <div class="flex-1 max-w-lg">
+                    <div class="bg-white rounded-lg rounded-tl-none px-4 py-3 shadow-sm border border-gray-200">
+                        <p class="text-gray-800">¡Hola! ¿Cómo estás? ¿Listo para practicar español?</p>
+                    </div>
+                    <div class="flex items-center space-x-2 mt-1 ml-1">
+                        <button class="flex items-center space-x-1 text-gray-400 hover:text-indigo-600 transition">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                             </svg>
+                            <span class="text-xs">Play</span>
                         </button>
-                        <span class="text-gray-600 text-sm">Click to record your response</span>
+                        <span class="text-xs text-gray-400">•</span>
+                        <span class="text-xs text-gray-400">now</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-6 h-[600px] overflow-y-auto">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Feedback</h2>
-            <div class="space-y-4">
-                <p class="text-gray-600 text-sm">Feedback will appear here after each interaction...</p>
+        <!-- Input Area -->
+        <div class="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <form id="text-form" ws-send hx-include="#focus-select" class="flex-1 relative">
+                    <input type="hidden" name="persona_id" value="{{ persona.id }}">
+                    <input id="message-input" name="text_message" type="text" class="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Type your message in Spanish..." autocomplete="off" required>
+                    <button id="send-button" type="submit" class="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-gray-400 hover:text-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </form>
+                <button id="mic-button" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold p-3 rounded-full shadow-md transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path>
+                        <path fill-rule="evenodd" d="M5.223 10.166a.75.75 0 00-1.446.468A6.5 6.5 0 0010 17.5a6.5 6.5 0 006.223-6.866.75.75 0 00-1.446-.468A5 5 0 0110 16a5 5 0 01-4.777-5.834z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const textForm = document.getElementById('text-form');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const micButton = document.getElementById('mic-button');
+        const chatLog = document.getElementById('chat-log');
+        const conversationContainer = document.getElementById('conversation-container');
+        let mediaRecorder;
+        let socketWrapper;
+        let audioChunks = [];
+        let isRecording = false;
+        let audioContext;
+        let audioQueue = [];
+        let sourceQueue = [];
+        let isPlaying = false;
+        let nextPlayTime = 0;
+
+        textForm.addEventListener('htmx:beforeSend', function(evt) {
+            // This handles text messages sent via the form
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            micButton.disabled = true;
+
+            // Clear input after value has been read for sending
+            setTimeout(() => { messageInput.value = '' }, 0);
+        });
+
+        document.body.addEventListener('htmx:wsAfterMessage', function(evt) {
+            // Scroll to bottom for any HTML message from server
+            chatLog.scrollTop = chatLog.scrollHeight;
+        });
+
+        conversationContainer.addEventListener('htmx:wsOpen', function(evt) {
+            socketWrapper = evt.detail.socketWrapper;
+        });
+        
+        conversationContainer.addEventListener('htmx:wsBeforeMessage', function(evt) {
+            if (evt.detail.message instanceof Blob) {
+                evt.preventDefault();
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const reader = new FileReader();
+                reader.onload = function() {
+                    audioQueue.push(reader.result);
+                    if (!isPlaying) {
+                        processNextAudioChunk();
+                    }
+                };
+                reader.readAsArrayBuffer(evt.detail.message);
+            }
+        });
+
+        function processNextAudioChunk() {
+            if (audioQueue.length === 0) {
+                isPlaying = false;
+                return;
+            }
+            isPlaying = true;
+            const arrayBuffer = audioQueue.shift();
+            const dataView = new DataView(arrayBuffer);
+            const audioBuffer = audioContext.createBuffer(1, arrayBuffer.byteLength / 2, 24000);
+            const channelData = audioBuffer.getChannelData(0);
+            for (let i = 0; i < dataView.byteLength; i += 2) {
+                const sample = dataView.getInt16(i, true);
+                channelData[i / 2] = sample / 32768.0;
+            }
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+            if (nextPlayTime < audioContext.currentTime) {
+                nextPlayTime = audioContext.currentTime;
+            }
+            source.start(nextPlayTime);
+            source.addEventListener('ended', sourceEnded);
+            sourceQueue.push(source);
+            nextPlayTime += audioBuffer.duration;
+            processNextAudioChunk();
+        }
+
+        function sourceEnded() {
+            sourceQueue.shift();
+            if (sourceQueue.length === 0 && audioQueue.length === 0) {
+                console.log('Audio finished playing');
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                micButton.disabled = false;
+                messageInput.placeholder = 'Type your message in Spanish...';
+                messageInput.focus();
+                return;
+            }
+        }
+
+        micButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                isRecording = true;
+                micButton.classList.add('bg-red-600', 'animate-pulse'); // Recording indicator
+                audioChunks = [];
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micButton.classList.remove('bg-red-600', 'animate-pulse');
+                mediaRecorder.addEventListener("stop", () => {
+                    if (socketWrapper) {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = function() {
+                            const base64data = reader.result;
+                            const personaId = document.querySelector('input[name="persona_id"]').value;
+                            const focusTopicId = document.getElementById('focus-select').value;
+                            const message = {
+                                audio_message: base64data,
+                                persona_id: personaId,
+                            };
+                            socketWrapper.send(JSON.stringify(message));
+                        }
+                    } else {
+                        console.error("Could not find WebSocket to send audio to.");
+                    }
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    micButton.disabled = true;
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}
