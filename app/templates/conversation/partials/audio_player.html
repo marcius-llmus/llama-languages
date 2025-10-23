@@ -1,5 +1,5 @@
 {% if audio_url %}
-<div id="ai-audio-container-{{ turn_id }}" hx-swap-oob="outerHTML" x-data="{
+<div id="ai-audio-container-{{ turn_id }}" hx-swap-oob="outerHTML" class="flex justify-end mt-2" x-data="{
     playing: false,
     audio: null,
     init() {

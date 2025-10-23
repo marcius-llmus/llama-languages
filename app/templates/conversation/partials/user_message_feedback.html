@@ -1,17 +1,15 @@
-<div hx-swap-oob="innerHTML:#user-message-feedback-{{ turn_id }}" x-data="{ showFeedback: false }">
+<div hx-swap-oob="innerHTML:#user-message-feedback-{{ turn_id }}">
     {% if feedback %}
-        <div class="flex justify-end items-center gap-2 mt-2">
-            <button
-                @click="showFeedback = !showFeedback"
-                class="px-3 py-1.5 text-white text-sm font-medium rounded transition-colors
-                    {% if feedback_level == 'red' %} bg-red-500 hover:bg-red-600
-                    {% elif feedback_level == 'yellow' %} bg-amber-500 hover:bg-amber-600
-                    {% else %} bg-green-500 hover:bg-green-600 {% endif %}"
-                title="View Corrections & Tips"
-            >
-                Feedback
-            </button>
-        </div>
+        <button
+            @click="showFeedback = !showFeedback"
+            class="px-3 py-1.5 text-white text-sm font-medium rounded transition-colors
+                {% if feedback_level == 'red' %} bg-red-500 hover:bg-red-600
+                {% elif feedback_level == 'yellow' %} bg-amber-500 hover:bg-amber-600
+                {% else %} bg-green-500 hover:bg-green-600 {% endif %}"
+            title="View Corrections & Tips"
+        >
+            Feedback
+        </button>
 
         <!-- Feedback Popup - Absolutely Positioned -->
         <div
@@ -60,6 +58,6 @@
         </div>
     {% else %}
         <!-- No feedback, render an empty div to remove spinner -->
-        <div class="mt-2"></div>
+        <div></div>
     {% endif %}
 </div>

@@ -10,7 +10,7 @@
                     {% endif %}
                 </p>
                 <div id="user-audio-container-{{ turn_id }}"></div>
-                <div id="user-message-feedback-{{ turn_id }}" class="flex justify-end items-center gap-2 mt-2">
+                <div id="user-message-feedback-{{ turn_id }}" class="flex justify-end items-center gap-2 mt-2" x-data="{ showFeedback: false }">
                     {% if is_conversational %}
                         <!-- For text messages, spinner is removed on first AI response chunk -->
                     {% else %}
