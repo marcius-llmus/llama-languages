@@ -9,8 +9,7 @@ class SettingsBase(BaseModel):
 
 
 class SettingsRead(SettingsBase):
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class SettingsUpdate(SettingsBase):
