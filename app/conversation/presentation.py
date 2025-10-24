@@ -19,10 +19,11 @@ class WebSocketOrchestrator:
     def __init__(
         self,
         conversation_service: ConversationService,
-        manager: WebSocketConnectionManager,
+        ws_manager: WebSocketConnectionManager,
     ):
         self.conversation_service = conversation_service
-        self.manager = manager
+        self.ws_manager = ws_manager
+        self.transcription_started_turns: set[str] = set()
         self.event_handlers: dict[ConversationEventType, Handler] = {
             ConversationEventType.AI_TEXT_CHUNK_GENERATED: self._render_ai_text_chunk,
             ConversationEventType.FEEDBACK_GENERATED: self._render_user_message_feedback,
@@ -31,7 +32,7 @@ class WebSocketOrchestrator:
             ConversationEventType.USER_TRANSCRIPTION_CHUNK_GENERATED: self._render_user_transcription_chunk,
         }
 
-    async def _process_and_render_event_chunk(
+    async def _process_chunk(
         self, chunk: dict, turn_id: str
     ):
         event_type = chunk["type"]
@@ -49,7 +50,7 @@ class WebSocketOrchestrator:
         )
         try:
             while True:
-                data = await self.manager.receive_json()
+                data = await self.ws_manager.receive_json()
                 logger.info("Received JSON data from client.")
 
                 persona_id = data["persona_id"]
@@ -57,28 +58,19 @@ class WebSocketOrchestrator:
                 if text_message := data.get("text_message"):
                     logger.info("Received text message from client.")
                     user_message_data = text_message
-                    is_conversational = True
                 elif audio_data := data.get("audio_message"):
                     logger.info("Received audio message from client.")
                     header, encoded = audio_data.split(",", 1)
                     user_message_data = base64.b64decode(encoded)
-                    is_conversational = False
                 else:
                     raise ValueError("Invalid data received from client.")
 
                 turn_id = str(uuid.uuid4())
                 logger.info(f"Initiating turn {turn_id}.")
 
-                await self._render_user_bubble_with_loading_state(
-                    user_message_data if isinstance(user_message_data, str) else "",
-                    turn_id,
-                    is_conversational=is_conversational,
-                )
+                await self._render_user_bubble(user_message_data, turn_id)
 
-                # This is a temporary solution until personas are properly managed.
-                persona_initial = "P"
-
-                await self._render_ai_bubble_place_holder(turn_id, persona_initial)
+                await self._render_ai_bubble_place_holder(turn_id)
 
                 stream = self.conversation_service.run_conversation_turn(
                     user_message_data=user_message_data,
@@ -86,74 +78,70 @@ class WebSocketOrchestrator:
                     language_profile_id=language_profile_id,
                 )
 
-                analysis_complete = False
                 async for chunk in stream:
-                    logger.info(f"Rendering event '{chunk['type']}' for turn_id={turn_id}")
-                    if not analysis_complete and is_conversational:
-                        # For conversational (text) turns, remove the spinner on the first AI response chunk.
-                        await self._render_user_feedback(turn_id, None)
-                        analysis_complete = True
-                    await self._process_and_render_event_chunk(chunk, turn_id)
+                    await self._process_chunk(chunk, turn_id)
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
         except Exception as e:
             logger.error(f"An error occurred in WebSocket: {e}", exc_info=True)
 
-    async def _render_user_bubble_with_loading_state(
-        self, message: str, turn_id: str, is_conversational: bool
+    async def _render_user_bubble(
+        self, message: str | bytes, turn_id: str
     ):
+        is_text_message = isinstance(message, str)
         template = templates.get_template(
             "conversation/partials/user_message_bubble.html",
         ).render(
-            {"message": message, "turn_id": turn_id, "is_conversational": is_conversational}
+            {"message": message if is_text_message else None, "turn_id": turn_id}
         )
-        await self.manager.send_html(template)
+        await self.ws_manager.send_html(template)
 
     async def _render_ai_bubble_place_holder(
-        self, turn_id: str, persona_initial: str
+        self, turn_id: str
     ):
         template = templates.get_template(
             "conversation/partials/ai_message_bubble.html"
-        ).render({"turn_id": turn_id, "persona_initial": persona_initial})
-        await self.manager.send_html(template)
-
-    async def _render_user_feedback(
-        self, turn_id: str, feedback: dict | None
-    ):
-        feedback_level = None
-        if feedback and feedback.get("type"):
-            feedback_type = feedback["type"]
-            if feedback_type == FeedbackType.CORRECTION:
-                feedback_level = "red"
-            elif feedback_type in [FeedbackType.SUGGESTION, FeedbackType.TIP]:
-                feedback_level = "yellow"
-
-        context = {
-            "turn_id": turn_id,
-            "feedback": feedback,
-            "feedback_level": feedback_level,
-        }
-        template = templates.get_template("conversation/partials/user_message_feedback.html").render(context)
-        await self.manager.send_html(template)
+        ).render({"turn_id": turn_id})
+        await self.ws_manager.send_html(template)
 
     async def _render_ai_text_chunk(
         self, data: Any, turn_id: str
     ):
         template = templates.get_template(
-            "conversation/partials/streaming_token.html"
+            "conversation/partials/ai_message_streaming_token.html"
         ).render({"token": data, "turn_id": turn_id})
-        await self.manager.send_html(template)
+        await self.ws_manager.send_html(template)
 
     async def _render_user_message_feedback(
         self, data: Any, turn_id: str
     ):
-        await self._render_user_feedback(turn_id, data)
+        feedbacks_to_show = data
+        has_feedback_data = bool(feedbacks_to_show)
+        feedback_level = "green" # should never be green, unless a new type is added but not mapped here
+
+        if has_feedback_data:
+            feedback_types = {f.type for f in feedbacks_to_show}
+            if FeedbackType.CORRECTION in feedback_types:
+                feedback_level = "red" # show worst case scenario first. that's why the elif
+            elif [FeedbackType.SUGGESTION, FeedbackType.TIP] in feedback_types:
+                feedback_level = "yellow"
+
+        context = {
+            "turn_id": turn_id,
+            "has_feedback_data": has_feedback_data,
+            "feedback_level": feedback_level,
+            "feedbacks_to_show": feedbacks_to_show,
+        }
+        template = templates.get_template(
+            "conversation/partials/user_message_feedback.html"
+        ).render(context)
+        await self.ws_manager.send_html(template)
 
     async def _send_ai_audio_chunk(
         self, data: Any, _turn_id: str
     ):
-        await self.manager.send_bytes(data)
+        await self.ws_manager.send_bytes(data)
 
     async def _render_ai_audio_player(
         self, data: Any, turn_id: str
@@ -161,12 +149,20 @@ class WebSocketOrchestrator:
         template = templates.get_template(
             "conversation/partials/audio_player.html"
         ).render({"audio_url": data["audio_url"], "turn_id": turn_id})
-        await self.manager.send_html(template)
+        await self.ws_manager.send_html(template)
 
     async def _render_user_transcription_chunk(
         self, data: Any, turn_id: str
     ):
-        template = templates.get_template(
-            "conversation/partials/user_message_streaming_token.html"
-        ).render({"token": data, "turn_id": turn_id})
-        await self.manager.send_html(template)
+        if turn_id not in self.transcription_started_turns:
+            # First chunk, replace "Transcribing..."
+            template = templates.get_template(
+                "conversation/partials/user_message_transcription.html"
+            ).render({"transcription": data, "turn_id": turn_id})
+            self.transcription_started_turns.add(turn_id)
+        else:
+            # Subsequent chunks, append
+            template = templates.get_template(
+                "conversation/partials/user_message_streaming_token.html"
+            ).render({"token": data, "turn_id": turn_id})
+        await self.ws_manager.send_html(template)

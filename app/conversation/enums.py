@@ -2,7 +2,6 @@ from enum import StrEnum
 
 
 class FeedbackType(StrEnum):
-    OK = "ok"
     CORRECTION = "correction"
     TIP = "tip"
     SUGGESTION = "suggestion"

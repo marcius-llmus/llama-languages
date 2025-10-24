@@ -1,5 +1,5 @@
 <div hx-swap-oob="innerHTML:#user-message-feedback-{{ turn_id }}">
-    {% if feedback %}
+    {% if has_feedback_data %}
         <button
             @click="showFeedback = !showFeedback"
             class="px-3 py-1.5 text-white text-sm font-medium rounded transition-colors
@@ -31,29 +31,31 @@
                 </button>
             </div>
 
-            <div class="space-y-4">
-                {% if feedback.type == 'correction' %}
-                <div class="bg-red-50 border-l-4 border-red-500 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="font-bold text-red-800 text-base">Correction</span>
+            <div class="space-y-4 max-h-64 overflow-y-auto scrollbar-thin">
+                {% for feedback in feedbacks_to_show %}
+                    {% if feedback.type == 'correction' %}
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-bold text-red-800 text-base">Correction</span>
+                        </div>
+                        <p class="text-red-900 text-base">{{ feedback.reasoning }}</p>
                     </div>
-                    <p class="text-red-900 text-base">{{ feedback.feedback }}</p>
-                </div>
-                {% elif feedback.type == 'suggestion' %}
-                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="font-bold text-yellow-800 text-base">Suggestion</span>
+                    {% elif feedback.type == 'suggestion' %}
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-bold text-yellow-800 text-base">Suggestion</span>
+                        </div>
+                        <p class="text-yellow-900 text-base">{{ feedback.reasoning }}</p>
                     </div>
-                    <p class="text-yellow-900 text-base">{{ feedback.feedback }}</p>
-                </div>
-                {% elif feedback.type == 'tip' %}
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="font-bold text-blue-800 text-base">Tip</span>
+                    {% elif feedback.type == 'tip' %}
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-bold text-blue-800 text-base">Tip</span>
+                        </div>
+                        <p class="text-blue-900 text-base">{{ feedback.reasoning }}</p>
                     </div>
-                    <p class="text-blue-900 text-base">{{ feedback.feedback }}</p>
-                </div>
-                {% endif %}
+                    {% endif %}
+                {% endfor %}
             </div>
         </div>
     {% else %}

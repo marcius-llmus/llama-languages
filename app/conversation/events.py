@@ -3,6 +3,7 @@ from workflows.events import Event
 
 from app.conversation.schemas import Feedback
 
+
 class UserTranscriptionChunkGenerated(Event):
     """Event carrying a single token from the streaming transcription."""
 
@@ -36,7 +37,7 @@ class PromptReady(Event):
 class FeedbackGenerated(Event):
     """Carries the feedback object for the user's last message."""
 
-    feedback: Feedback
+    feedbacks: list[Feedback]
 
 
 class AITextChunkGenerated(Event):
@@ -55,7 +56,7 @@ class FullResponseGenerated(Event):
     language_profile_id: int
 
 
-class AIAudioReady(Event):
+class AIAudioSaved(Event):
     """Event carrying the URL to the generated audio file."""
 
     audio_url: str

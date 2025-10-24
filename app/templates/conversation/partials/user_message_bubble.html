@@ -10,17 +10,12 @@
                     {% endif %}
                 </p>
                 <div id="user-audio-container-{{ turn_id }}"></div>
-                <div id="user-message-feedback-{{ turn_id }}" class="flex justify-end items-center gap-2 mt-2" x-data="{ showFeedback: false }">
-                    {% if is_conversational %}
-                        <!-- For text messages, spinner is removed on first AI response chunk -->
-                    {% else %}
-                        <!-- For audio, show spinner until feedback is generated -->
-                        <button class="px-3 py-1.5 bg-blue-700 text-white text-sm font-medium rounded cursor-wait">
-                            <svg class="w-4 h-4 animate-spin inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                        </button>
-                    {% endif %}
+                <div id="user-message-feedback-{{ turn_id }}" class="flex justify-end items-center gap-2 mt-2 min-h-8" x-data="{ showFeedback: false }">
+                    <button id="user-message-spinner-{{ turn_id }}" class="px-3 py-1.5 bg-blue-700 text-white text-sm font-medium rounded cursor-wait">
+                        <svg class="w-4 h-4 animate-spin inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>

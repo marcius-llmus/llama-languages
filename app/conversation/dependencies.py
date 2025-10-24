@@ -17,7 +17,7 @@ from app.conversation.workflows import ConversationWorkflow
 
 
 def get_gemini_llm() -> GoogleGenAI:
-    return GoogleGenAI(model="gemini-2.5-flash", api_key=settings.GOOGLE_API_KEY)
+    return GoogleGenAI(model="gemini-2.5-flash-lite", api_key=settings.GOOGLE_API_KEY)
 
 
 def get_elevenlabs_async_client() -> PatchedAsyncElevenLabs:

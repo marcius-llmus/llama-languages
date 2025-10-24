@@ -4,12 +4,15 @@ import tempfile
 import wave
 import logging
 
+from llama_index.core import PromptTemplate
+
 from llama_index.core.llms import ChatMessage, DocumentBlock, MessageRole, TextBlock
 from llama_index.llms.google_genai import GoogleGenAI
 from workflows import Workflow, Context, step
 from workflows.events import StartEvent, StopEvent
 
 from app.clients.elevenlabs.elevenlabs_tts import ElevenLabsTTS
+from app.conversation.schemas import FeedbackResponse
 from app.core.config import settings
 from app.language_profiles.services import LanguageProfileService
 from app.personas.services import PersonaService
@@ -18,7 +21,7 @@ from app.settings.services import SettingsService
 from app.conversation.events import (
     AIAudioChunkGenerated,
     FeedbackGenerated,
-    AIAudioReady,
+    AIAudioSaved,
     PromptReady,
     FullResponseGenerated,
     AITextChunkGenerated,
@@ -26,7 +29,6 @@ from app.conversation.events import (
     AudioInputReceived,
     UserTranscriptionChunkGenerated,
 )
-from app.conversation.schemas import FeedbackResponse
 
 logger = logging.getLogger(__name__)
 
@@ -196,68 +198,83 @@ You are acting as the persona.
         )
 
     @step
-    async def generate_feedback(self, ctx: Context, ev: FullResponseGenerated) -> StopEvent:
-        """Generates feedback for the user's message."""
+    async def save_audio(
+        self, ctx: Context, ev: FullResponseGenerated
+    ) -> AIAudioSaved:
+        """
+        Saves the complete audio bytes to a file and passes data to the feedback step.
+        """
+        logger.info("Step: save_audio - Starting.")
+        audio_url = None
+        if ev.audio_bytes:
+            output_dir = settings.AUDIO_OUTPUT_DIR
+            os.makedirs(output_dir, exist_ok=True)
+            file_name = f"{uuid.uuid4()}.wav"
+            file_path = os.path.join(output_dir, file_name)
+
+            with wave.open(file_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)  # 16-bit PCM
+                wf.setframerate(24000)
+                wf.writeframes(ev.audio_bytes)
+            audio_url = f"/static/audio/{file_name}"
+            logger.info(f"Audio saved to {file_path}. URL: {audio_url}")
+
+            ctx.write_event_to_stream(AIAudioSaved(audio_url=audio_url))
+            logger.info("Audio saved event dispatched.")
+        else:
+            logger.info("No audio bytes to save.")
+
+        return AIAudioSaved(audio_url=audio_url)
+
+    @step
+    async def generate_feedback(
+        self, ctx: Context, ev: FullResponseGenerated
+    ) -> FeedbackGenerated:
+        """Generates feedback for the user's message and ends the workflow."""
         logger.info("Step: generate_feedback - Starting.")
 
         persona = self.persona_service.get_persona(ev.persona_id)
         app_settings = self.settings_service.get_settings()
 
-        feedback_system_prompt = f"""
-You are an AI language coach. Your task is to provide feedback on a user's message.
-The user is practicing a language.
-You have been provided with the user's message and the conversational response that was given.
-Analyze the user's message and provide feedback based on the global feedback rules.
-Do not generate a conversational response. Only generate feedback.
+        feedback_prompt_template = PromptTemplate(
+            "You are an AI language coach. Your task is to provide feedback on a user's message.\n"
+            "The user is practicing a language.\n"
+            "Analyze the user's message for spelling mistakes, grammatical errors, and suggest better ways to phrase things.\n"
+            "Your feedback should be concise and helpful.\n"
+            "Do not generate a conversational response. Only generate feedback.\n\n"
+            "Persona of conversational partner: {persona_prompt}\n"
+            "Global Feedback Rules: {evaluation_prompt}\n"
+            "---\n"
+            "User's message: \"{user_message_text}\"\n"
+            "---\n"
+            "Now, provide feedback on the user's message based on the rules. If there are no errors, you must return an empty list of feedback."
+        )
 
-Persona of conversational partner: {persona.prompt}
-Global Feedback Rules: {app_settings.evaluation_prompt}
----
-User's message: "{ev.user_message_text}"
-Conversational response given: "{ev.ai_response_text}"
----
-Now, provide feedback on the user's message.
-"""
-        messages = [
-            ChatMessage(role=MessageRole.SYSTEM, content=feedback_system_prompt.strip()),
-            ChatMessage(role=MessageRole.USER, content="Provide feedback now."),
-        ]
-
+        feedbacks = []
         try:
-            structured_llm = self.llm.as_structured_llm(FeedbackResponse)
-            feedback_response = await structured_llm.achat(messages)
-
-            if feedback_response and feedback_response.feedback:
-                logger.info(f"Generated feedback: {feedback_response.feedback}")
-                for item in feedback_response.feedback:
-                    ctx.write_event_to_stream(FeedbackGenerated(feedback=item))
+            response = await self.llm.astructured_predict(
+                FeedbackResponse,
+                feedback_prompt_template,
+                persona_prompt=persona.prompt,
+                evaluation_prompt=app_settings.evaluation_prompt,
+                user_message_text=ev.user_message_text,
+            )
+            if response.feedback:
+                logger.info(f"Generated feedback: {response.feedback}")
+                feedbacks = response.feedback
         except Exception as e:
             logger.error(f"Failed to generate feedback: {e}", exc_info=True)
 
+        # Always emit the event. An empty list signifies analysis is complete with no feedback items.
+        ctx.write_event_to_stream(FeedbackGenerated(feedbacks=feedbacks))
         logger.info("Step: generate_feedback - Finished.")
-        return StopEvent()
+        return FeedbackGenerated(feedbacks=feedbacks)
 
     @step
-    async def save_audio(self, ctx: Context, ev: FullResponseGenerated) -> StopEvent:
-        """Saves the complete audio bytes to a file and dispatches the URL."""
-        logger.info("Step: save_audio - Starting.")
-        if not ev.audio_bytes:
-            logger.info("No audio bytes to save. Stopping workflow.")
-            return StopEvent()
+    async def gather(self, ctx: Context, ev: AIAudioSaved | FeedbackGenerated) -> StopEvent | None:
+        data = ctx.collect_events(ev, [AIAudioSaved, FeedbackGenerated])
+        if data is None:
+            return None
 
-        output_dir = settings.AUDIO_OUTPUT_DIR
-        os.makedirs(output_dir, exist_ok=True)
-        file_name = f"{uuid.uuid4()}.wav"
-        file_path = os.path.join(output_dir, file_name)
-
-        with wave.open(file_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)  # 16-bit PCM
-            wf.setframerate(24000)
-            wf.writeframes(ev.audio_bytes)
-        audio_url = f"/static/audio/{file_name}"
-        logger.info(f"Audio saved to {file_path}. URL: {audio_url}")
-
-        ctx.write_event_to_stream(AIAudioReady(audio_url=audio_url))
-        logger.info("Audio saved. Stopping workflow for this turn.")
         return StopEvent()
