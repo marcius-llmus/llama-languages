@@ -10,6 +10,7 @@ from app.language_profiles.schemas import (
     LanguageProfileUpdate,
     PracticeTopicCreate,
 )
+from app.personas.services import PersonaService
 
 
 class LanguageProfileService:
@@ -69,10 +70,22 @@ class LanguageProfileService:
 
 
 class LanguageProfilePageService:
-    def __init__(self, language_profile_service: LanguageProfileService):
+    def __init__(
+        self,
+        language_profile_service: LanguageProfileService,
+        persona_service: PersonaService,
+    ):
         self.language_profile_service = language_profile_service
+        self.persona_service = persona_service
 
     def get_language_profiles_page_data(self) -> dict:
         return {
-            "language_profiles": self.language_profile_service.list_language_profiles()
+            "language_profiles": self.language_profile_service.list_language_profiles(),
+            "personas": self.persona_service.list_personas(),
+        }
+
+    def get_edit_language_profile_form_data(self, profile_id: int) -> dict:
+        return {
+            "language_profile": self.language_profile_service.get_language_profile(profile_id),
+            "personas": self.persona_service.list_personas(),
         }

@@ -20,19 +20,16 @@ router = APIRouter()
 async def view_conversation_page(
     request: Request,
     language_profile_id: int,
-    language_profile_service: LanguageProfileService = Depends(
+    service: LanguageProfileService = Depends(
         get_language_profile_service
     ),
-    persona_service: PersonaService = Depends(get_persona_service),
 ):
-    language_profile = language_profile_service.get_language_profile(language_profile_id)
-    # This is a temporary mock to align with the new frontend design.
-    # The language_profile should eventually have a direct relationship to a persona.
-    persona = persona_service.list_personas()[0]
+    language_profile = service.get_language_profile(language_profile_id)
+    if not language_profile:
+        return HTMLResponse("Language profile not found.", status_code=404)
     context = {
         "request": request,
         "language_profile": language_profile,
-        "persona": persona,
     }
     return templates.TemplateResponse("conversation/pages/main.html", context)
 

@@ -119,10 +119,12 @@ class WebSocketOrchestrator:
         self, data: Any, turn_id: str
     ):
         feedbacks_to_show = data
-        has_feedback_data = bool(feedbacks_to_show)
-        feedback_level = "green" # should never be green, unless a new type is added but not mapped here
-
-        if has_feedback_data:
+        if not feedbacks_to_show:
+            template = templates.get_template(
+                "conversation/partials/user_message_success.html"
+            ).render({"turn_id": turn_id})
+        else:
+            feedback_level = "green"  # should never be green, unless a new type is added but not mapped here
             feedback_types = {f.type for f in feedbacks_to_show}
             if FeedbackType.CORRECTION in feedback_types:
                 feedback_level = "red"
@@ -133,15 +135,14 @@ class WebSocketOrchestrator:
             elif FeedbackType.PRONUNCIATION in feedback_types:
                 feedback_level = "teal"
 
-        context = {
-            "turn_id": turn_id,
-            "has_feedback_data": has_feedback_data,
-            "feedback_level": feedback_level,
-            "feedbacks_to_show": feedbacks_to_show,
-        }
-        template = templates.get_template(
-            "conversation/partials/user_message_feedback.html"
-        ).render(context)
+            context = {
+                "turn_id": turn_id,
+                "feedback_level": feedback_level,
+                "feedbacks_to_show": feedbacks_to_show,
+            }
+            template = templates.get_template(
+                "conversation/partials/user_message_feedback.html"
+            ).render(context)
         await self.ws_manager.send_html(template)
 
     async def _send_ai_audio_chunk(

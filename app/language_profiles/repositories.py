@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.commons.repositories import BaseRepository
 from app.language_profiles.models import LanguageProfile, PracticeTopic
@@ -14,11 +14,24 @@ class LanguageProfileRepository(BaseRepository[LanguageProfile]):
     def __init__(self, db):
         super().__init__(db)
 
+    def get(self, pk: int) -> LanguageProfile | None:
+        return self.db.execute(
+            select(self.model)
+            .options(
+                selectinload(self.model.practice_topics),
+                joinedload(self.model.persona),
+            )
+            .filter(self.model.id == pk)
+        ).scalar_one_or_none()
+
     def list(self) -> Sequence[LanguageProfile]:
         return (
             self.db.execute(
                 select(self.model)
-                .options(selectinload(self.model.practice_topics))
+                .options(
+                    selectinload(self.model.practice_topics),
+                    joinedload(self.model.persona),
+                )
                 .order_by(self.model.id)
             )
             .scalars()

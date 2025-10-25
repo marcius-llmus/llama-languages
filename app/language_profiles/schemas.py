@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.personas.schemas import PersonaRead
+
 
 # Practice Topic Schemas
 class PracticeTopicBase(BaseModel):
@@ -19,6 +21,7 @@ class PracticeTopicRead(PracticeTopicBase):
 class LanguageProfileBase(BaseModel):
     name: str
     target_language: str
+    persona_id: int
 
 
 class LanguageProfileCreate(LanguageProfileBase):
@@ -32,4 +35,5 @@ class LanguageProfileUpdate(LanguageProfileBase):
 class LanguageProfileRead(LanguageProfileBase):
     id: int
     practice_topics: list[PracticeTopicRead] = []
+    persona: PersonaRead
     model_config = ConfigDict(from_attributes=True)
