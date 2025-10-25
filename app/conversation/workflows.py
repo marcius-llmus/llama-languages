@@ -254,14 +254,16 @@ You are acting as the persona.
         )
         feedbacks = []
         try:
-            response = await self.llm.astructured_predict(
-                FeedbackResponse,
-                feedback_prompt_template,
+            structured_llm = self.llm.as_structured_llm(FeedbackResponse)
+            prompt_content = feedback_prompt_template.format(
                 user_message_text=ev.user_message_text
             )
-            if response.feedback:
-                logger.info(f"Generated feedback: {response.feedback}")
-                feedbacks = response.feedback
+            messages = [ChatMessage(role=MessageRole.USER, content=prompt_content)]
+            response = await structured_llm.achat(messages)
+            feedback_response = response.raw
+            if feedback_response and feedback_response.feedback:
+                logger.info(f"Generated feedback: {feedback_response.feedback}")
+                feedbacks = feedback_response.feedback
         except Exception as e:
             logger.error(f"Failed to generate feedback from text: {e}", exc_info=True)
 
