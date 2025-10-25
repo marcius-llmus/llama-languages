@@ -24,12 +24,13 @@ class ConversationService:
         self.workflow = workflow
 
     async def run_conversation_turn(self, *, user_message_data: str | bytes, persona_id: int,
-            language_profile_id: int) -> AsyncGenerator[dict, None]:
+                                    language_profile_id: int, practice_topic_id: int | None) -> AsyncGenerator[dict, None]:
 
         start_input = {
             "user_message_data": user_message_data,
             "persona_id": persona_id,
-            "language_profile_id": language_profile_id
+            "language_profile_id": language_profile_id,
+            "practice_topic_id": practice_topic_id,
         }
 
         logger.info(f"Starting workflow with input keys: {list(start_input.keys())}")

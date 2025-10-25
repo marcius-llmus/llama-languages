@@ -19,6 +19,16 @@
                 <span class="font-medium text-gray-700">Persona:</span>
                 <span class="text-gray-900">{{ persona.name }}</span>
             </div>
+            <div class="flex items-center space-x-2 min-w-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                <span class="font-medium text-gray-700">Topic:</span>
+                <select id="practice-topic-select" name="practice_topic_id" class="text-gray-900 border-none bg-transparent focus:ring-0">
+                    <option value="">Open Conversation</option>
+                    {% for topic in language_profile.practice_topics %}
+                        <option value="{{ topic.id }}">{{ topic.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             </div>
             <div class="flex items-center space-x-3">
             <button onclick="window.location.href='{{ request.url_for('view_language_profiles') }}'" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-1.5 text-sm rounded-lg shadow-md transition">
@@ -61,6 +71,7 @@
         <div class="border-t border-gray-200 p-6">
             <form id="text-form" ws-send class="flex items-center gap-4">
                 <input type="hidden" name="persona_id" value="{{ persona.id }}">
+                <input type="hidden" name="practice_topic_id" :value="document.getElementById('practice-topic-select').value">
                 <div class="flex-1 relative">
                     <input
                         id="message-input"
@@ -203,9 +214,11 @@
                         reader.onloadend = function() {
                             const base64data = reader.result;
                             const personaId = document.querySelector('input[name="persona_id"]').value;
+                            const practiceTopicId = document.getElementById('practice-topic-select').value;
                             const message = {
                                 audio_message: base64data,
                                 persona_id: personaId,
+                                practice_topic_id: practiceTopicId ? parseInt(practiceTopicId, 10) : null
                             };
                             socketWrapper.send(JSON.stringify(message));
                         }

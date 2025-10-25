@@ -65,17 +65,22 @@ class ConversationWorkflow(Workflow):
         user_input: str | bytes = ev.input["user_message_data"]
         persona_id: int = ev.input["persona_id"]
         language_profile_id: int = ev.input["language_profile_id"]
+        practice_topic_id: int | None = ev.input["practice_topic_id"]
 
         if isinstance(user_input, str):
             ctx.send_event(
                 TextFeedbackRequired(
-                    user_message_text=user_input, persona_id=persona_id, language_profile_id=language_profile_id
+                    user_message_text=user_input,
+                    practice_topic_id=practice_topic_id,
+                    persona_id=persona_id,
+                    language_profile_id=language_profile_id,
                 )
             )
             return UserMessageReady(
                 text=user_input,
                 persona_id=persona_id,
                 language_profile_id=language_profile_id,
+                practice_topic_id=practice_topic_id,
             )
         elif isinstance(user_input, bytes):
             logger.info("Input is audio. Emitting AudioInputReceived.")
@@ -84,6 +89,7 @@ class ConversationWorkflow(Workflow):
                 audio_bytes=user_input,
                 persona_id=persona_id,
                 language_profile_id=language_profile_id,
+                practice_topic_id=practice_topic_id,
             )
         else:
             err_msg = f"Unsupported user input type: {type(user_input)}"
@@ -121,6 +127,7 @@ class ConversationWorkflow(Workflow):
                 user_message_text=full_transcription,
                 persona_id=ev.persona_id,
                 language_profile_id=ev.language_profile_id,
+                practice_topic_id=ev.practice_topic_id,
             )
         )
 
@@ -129,6 +136,7 @@ class ConversationWorkflow(Workflow):
             text=full_transcription,
             persona_id=ev.persona_id,
             language_profile_id=ev.language_profile_id,
+            practice_topic_id=ev.practice_topic_id,
         )
 
     @step
@@ -142,8 +150,10 @@ class ConversationWorkflow(Workflow):
         persona = self.persona_service.get_persona(ev.persona_id)
         app_settings = self.settings_service.get_settings()
 
-        # TODO: Fetch practice topic based on an ID from the event
-        practice_topic_description = "introductions and daily routines"
+        practice_topic_description = self.language_profile_service.get_practice_topic_description_or_default(
+            topic_id=ev.practice_topic_id
+        )
+
         system_prompt = SYSTEM_META_PROMPT.format(
             persona_prompt=persona.prompt,
             practice_topic_description=practice_topic_description,
@@ -161,6 +171,7 @@ class ConversationWorkflow(Workflow):
             user_message_text=ev.text,
             persona_id=ev.persona_id,
             language_profile_id=ev.language_profile_id,
+            practice_topic_id=ev.practice_topic_id,
         )
 
     @step
@@ -213,6 +224,7 @@ class ConversationWorkflow(Workflow):
             audio_bytes=all_audio_bytes,
             persona_id=ev.persona_id,
             language_profile_id=ev.language_profile_id,
+            practice_topic_id=ev.practice_topic_id,
         )
 
     @step

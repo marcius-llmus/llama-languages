@@ -43,6 +43,20 @@ class LanguageProfileService:
     def delete_language_profile(self, *, profile_id: int) -> LanguageProfile | None:
         return self.language_profile_repository.delete(pk=profile_id)
 
+    def get_practice_topic_description_or_default(self, *, topic_id: int | None) -> str:
+        default_description = "an open conversation"
+        if not topic_id:
+            return default_description
+
+        topic = self.get_practice_topic(topic_id=topic_id)
+        if not topic:
+            return default_description
+
+        return topic.name
+
+    def get_practice_topic(self, *, topic_id: int) -> PracticeTopic | None:
+        return self.practice_topic_repository.get(pk=topic_id)
+
     def add_topic_to_profile(
         self, *, profile_id: int, topic_in: PracticeTopicCreate
     ) -> PracticeTopic:

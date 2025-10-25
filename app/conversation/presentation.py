@@ -54,6 +54,7 @@ class WebSocketOrchestrator:
                 logger.info("Received JSON data from client.")
 
                 persona_id = data["persona_id"]
+                practice_topic_id = data.get("practice_topic_id")
 
                 if text_message := data.get("text_message"):
                     logger.info("Received text message from client.")
@@ -76,6 +77,7 @@ class WebSocketOrchestrator:
                     user_message_data=user_message_data,
                     persona_id=persona_id,
                     language_profile_id=language_profile_id,
+                    practice_topic_id=practice_topic_id,
                 )
 
                 async for chunk in stream:
