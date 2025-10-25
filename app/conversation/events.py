@@ -24,6 +24,23 @@ class UserMessageReady(Event):
     language_profile_id: int
 
 
+class TextFeedbackRequired(Event):
+    """Event to trigger parallel feedback generation for a text message."""
+
+    user_message_text: str
+    persona_id: int
+    language_profile_id: int
+
+
+class AudioFeedbackRequired(Event):
+    """Event to trigger parallel feedback generation for an audio message."""
+
+    audio_bytes: bytes
+    user_message_text: str
+    persona_id: int
+    language_profile_id: int
+
+
 class PromptReady(Event):
     """Carries the fully constructed prompt and voice ID."""
 

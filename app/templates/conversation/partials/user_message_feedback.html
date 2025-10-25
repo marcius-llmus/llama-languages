@@ -5,6 +5,7 @@
             class="px-3 py-1.5 text-white text-sm font-medium rounded transition-colors
                 {% if feedback_level == 'red' %} bg-red-500 hover:bg-red-600
                 {% elif feedback_level == 'yellow' %} bg-amber-500 hover:bg-amber-600
+                {% elif feedback_level == 'teal' %} bg-teal-500 hover:bg-teal-600
                 {% else %} bg-green-500 hover:bg-green-600 {% endif %}"
             title="View Corrections & Tips"
         >
@@ -19,6 +20,7 @@
             class="absolute top-0 left-0 right-0 bg-white text-gray-900 rounded-lg p-5 border-2 shadow-xl z-50 feedback-popup
                 {% if feedback_level == 'red' %} border-red-500
                 {% elif feedback_level == 'yellow' %} border-amber-500
+                {% elif feedback_level == 'teal' %} border-teal-500
                 {% else %} border-green-500 {% endif %}"
             style="display: none;"
         >
@@ -53,6 +55,13 @@
                             <span class="font-bold text-blue-800 text-base">Tip</span>
                         </div>
                         <p class="text-blue-900 text-base">{{ feedback.reasoning }}</p>
+                    </div>
+                    {% elif feedback.type == 'pronunciation' %}
+                    <div class="bg-teal-50 border-l-4 border-teal-500 p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-bold text-teal-800 text-base">Pronunciation</span>
+                        </div>
+                        <p class="text-teal-900 text-base">{{ feedback.reasoning }}</p>
                     </div>
                     {% endif %}
                 {% endfor %}

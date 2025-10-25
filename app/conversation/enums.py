@@ -5,6 +5,7 @@ class FeedbackType(StrEnum):
     CORRECTION = "correction"
     TIP = "tip"
     SUGGESTION = "suggestion"
+    PRONUNCIATION = "pronunciation"
 
 
 class ConversationEventType(StrEnum):

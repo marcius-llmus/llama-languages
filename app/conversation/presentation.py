@@ -123,9 +123,13 @@ class WebSocketOrchestrator:
         if has_feedback_data:
             feedback_types = {f.type for f in feedbacks_to_show}
             if FeedbackType.CORRECTION in feedback_types:
-                feedback_level = "red" # show worst case scenario first. that's why the elif
-            elif [FeedbackType.SUGGESTION, FeedbackType.TIP] in feedback_types:
+                feedback_level = "red"
+            elif feedback_types.intersection(
+                {FeedbackType.SUGGESTION, FeedbackType.TIP}
+            ):
                 feedback_level = "yellow"
+            elif FeedbackType.PRONUNCIATION in feedback_types:
+                feedback_level = "teal"
 
         context = {
             "turn_id": turn_id,
