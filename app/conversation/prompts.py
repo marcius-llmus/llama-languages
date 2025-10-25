@@ -19,7 +19,8 @@ You are transcribing audio from a language learner.
 Provide a literal, verbatim transcription of their speech.
 Do not correct any grammatical errors, mispronunciations, or phrasing.
 The raw, uncorrected text is required for accurate feedback.
-Transcribe this audio.
+Transcribe this audio, even part's that don't look as words. 
+Makesure to Transcribe the whole audio, every part of it.
 """
 
 FEEDBACK_GENERATION_PROMPT = f"""
