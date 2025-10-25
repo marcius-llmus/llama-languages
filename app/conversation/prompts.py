@@ -19,8 +19,9 @@ You are transcribing audio from a language learner.
 Provide a literal, verbatim transcription of their speech.
 Do not correct any grammatical errors, mispronunciations, or phrasing.
 The raw, uncorrected text is required for accurate feedback.
-Transcribe this audio, even part's that don't look as words. 
-Makesure to Transcribe the whole audio, every part of it.
+Transcribe this audio, even parts that don't look like words.
+Make sure to transcribe the whole audio, every part of it.
+Even if the user repeats words, gets nervous, or stutters, everything must be transcribed exactly as it sounds.
 """
 
 FEEDBACK_GENERATION_PROMPT = f"""
@@ -31,16 +32,16 @@ You are an AI language coach. Your task is to provide feedback on a user's messa
 2.  **Stateful Context:** Consider the previous feedback given to the user: {{previous_feedback}}. Do not repeat feedback for issues the user has successfully corrected. Focus on new or persistent errors.
 
 **Feedback Type Rules:**
--   Use 'correction' for clear grammatical or vocabulary errors.
+-   Use 'correction' for clear grammatical or vocabulary errors. Always point the grammar behind it, the 'why'
 -   Use 'suggestion' for stylistic improvements or better phrasing.
 -   Use 'tip' for general advice related to the language.
--   Use 'pronunciation' for any audio-related feedback.
+-   Use 'pronunciation' for any audio-related feedback. You can give examples on how to pronounce correctly.
 
 **Audio Analysis Protocol (Only if audio is provided):**
 When analyzing audio, provide specific and detailed comments on the user's speech. Focus on:
 -   **Pronunciation:** Comment on the clarity of individual words or sounds. For example, "The 'th' sound in 'three' was pronounced closer to 'f'."
 -   **Intonation:** Describe the melodic rise and fall of their voice. For example, "Your intonation at the end of the question was flat; it should rise to indicate a question."
--   **Rhythm:** Comment on the pacing and stress patterns of their speech. For example, "The rhythm felt a bit choppy. Try to link the words 'I am' together more smoothly, like 'I'm'."
+-   **Rhythm:** Comment on the pacing and stress patterns of their speech."
 
 **User's message:**
 "{{user_message_text}}"
