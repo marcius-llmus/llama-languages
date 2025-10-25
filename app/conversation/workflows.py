@@ -4,8 +4,6 @@ import tempfile
 import wave
 import logging
 
-from llama_index.core import PromptTemplate
-
 from llama_index.core.llms import ChatMessage, DocumentBlock, MessageRole, TextBlock
 from llama_index.llms.google_genai import GoogleGenAI
 from workflows import Workflow, Context, step
@@ -248,16 +246,13 @@ You are acting as the persona.
     async def generate_feedback_from_text(self, ctx: Context, ev: TextFeedbackRequired) -> FeedbackGenerated:
         """Generates feedback for the user's text message in parallel."""
         logger.info("Step: generate_feedback_from_text - Starting.")
-        feedback_prompt_template = PromptTemplate(
+        prompt_content = (
             "You are an AI language coach. Your task is to provide feedback on a user's message.\n"
-            "User's message: \"{user_message_text}\"\n"
+            f'User\'s message: "{ev.user_message_text}"\n'
         )
         feedbacks = []
         try:
             structured_llm = self.llm.as_structured_llm(FeedbackResponse)
-            prompt_content = feedback_prompt_template.format(
-                user_message_text=ev.user_message_text
-            )
             messages = [ChatMessage(role=MessageRole.USER, content=prompt_content)]
             response = await structured_llm.achat(messages)
             feedback_response = response.raw
@@ -282,15 +277,14 @@ You are acting as the persona.
                 temp_audio_file.write(ev.audio_bytes)
                 temp_audio_file.flush()
 
-                feedback_prompt_template = PromptTemplate(
+                prompt_content = (
                     "You are an AI language coach. A user has sent an audio message, which has been transcribed.\n"
-                    "Transcription: \"{user_message_text}\"\n\n"
+                    f'Transcription: "{ev.user_message_text}"\n\n'
                     "Your tasks are:\n"
                     "1. Based on the transcription, provide feedback on the user's grammar, phrasing, and word choice.\n"
                     "2. Based on the provided audio, comment on the user's pronunciation, rhythm, and intonation. Use the type 'pronunciation' for this feedback.\n"
                     "Combine all feedback into a concise, helpful response."
                 )
-                prompt_content = feedback_prompt_template.format(user_message_text=ev.user_message_text)
 
                 messages = [
                     ChatMessage(role=MessageRole.USER, blocks=[
