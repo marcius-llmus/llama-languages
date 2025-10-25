@@ -12,6 +12,7 @@ from workflows.events import StartEvent, StopEvent
 from app.clients.elevenlabs.elevenlabs_tts import ElevenLabsTTS
 from app.conversation.schemas import FeedbackResponse
 from app.core.config import settings
+from app.conversation.prompts import FEEDBACK_GENERATION_PROMPT, LITERAL_TRANSCRIPTION_PROMPT, SYSTEM_META_PROMPT
 from app.language_profiles.services import LanguageProfileService
 from app.personas.services import PersonaService
 from app.settings.services import SettingsService
@@ -49,6 +50,7 @@ class ConversationWorkflow(Workflow):
         self.llm = llm
         self.elevenlabs_tts = elevenlabs_tts
         self.history: list[ChatMessage] = []
+        self.last_turn_feedback: list = []
 
     @step
     async def process_user_input(
@@ -101,7 +103,7 @@ class ConversationWorkflow(Workflow):
             messages = [
                 ChatMessage(role=MessageRole.USER, blocks=[
                     DocumentBlock(path=temp_audio_file.name, document_mimetype="audio/wav"),
-                    TextBlock(text="Transcribe this audio.")
+                    TextBlock(text=LITERAL_TRANSCRIPTION_PROMPT)
                 ])
             ]
             response_stream = await self.llm.astream_chat(messages)
@@ -140,13 +142,14 @@ class ConversationWorkflow(Workflow):
         persona = self.persona_service.get_persona(ev.persona_id)
         app_settings = self.settings_service.get_settings()
 
-        system_prompt = f"""
-Persona: {persona.prompt}
-Global Feedback Rules: {app_settings.evaluation_prompt}
----
-You are acting as the persona.
-"""
-
+        # TODO: Fetch practice topic based on an ID from the event
+        practice_topic_description = "introductions and daily routines"
+        system_prompt = SYSTEM_META_PROMPT.format(
+            persona_prompt=persona.prompt,
+            practice_topic_description=practice_topic_description,
+        )
+        if app_settings.evaluation_prompt:
+            system_prompt += f"\n\n--- Global Feedback Rules ---\n{app_settings.evaluation_prompt}"
         messages = [
             ChatMessage(role=MessageRole.SYSTEM, content=system_prompt.strip())
         ] + self.history
@@ -246,22 +249,21 @@ You are acting as the persona.
     async def generate_feedback_from_text(self, ctx: Context, ev: TextFeedbackRequired) -> FeedbackGenerated:
         """Generates feedback for the user's text message in parallel."""
         logger.info("Step: generate_feedback_from_text - Starting.")
-        prompt_content = (
-            "You are an AI language coach. Your task is to provide feedback on a user's message.\n"
-            f'User\'s message: "{ev.user_message_text}"\n'
+        prompt_content = FEEDBACK_GENERATION_PROMPT.format(
+            previous_feedback=str(self.last_turn_feedback),
+            user_message_text=ev.user_message_text,
         )
         feedbacks = []
         try:
             structured_llm = self.llm.as_structured_llm(FeedbackResponse)
             messages = [ChatMessage(role=MessageRole.USER, content=prompt_content)]
             response = await structured_llm.achat(messages)
-            feedback_response = response.raw
-            if feedback_response and feedback_response.feedback:
-                logger.info(f"Generated feedback: {feedback_response.feedback}")
-                feedbacks = feedback_response.feedback
+            logger.info(f"Generated feedback: {response}")
+            feedbacks = response.raw.feedback
         except Exception as e:
             logger.error(f"Failed to generate feedback from text: {e}", exc_info=True)
 
+        self.last_turn_feedback = feedbacks
         ctx.write_event_to_stream(FeedbackGenerated(feedbacks=feedbacks))
         return FeedbackGenerated(feedbacks=feedbacks)
 
@@ -272,19 +274,14 @@ You are acting as the persona.
         """
         logger.info("Step: generate_feedback_from_audio - Starting.")
         feedbacks = []
+        prompt_content = FEEDBACK_GENERATION_PROMPT.format(
+            previous_feedback=str(self.last_turn_feedback),
+            user_message_text=ev.user_message_text,
+        )
         try:
             with tempfile.NamedTemporaryFile(delete=True, suffix=".wav") as temp_audio_file:
                 temp_audio_file.write(ev.audio_bytes)
                 temp_audio_file.flush()
-
-                prompt_content = (
-                    "You are an AI language coach. A user has sent an audio message, which has been transcribed.\n"
-                    f'Transcription: "{ev.user_message_text}"\n\n'
-                    "Your tasks are:\n"
-                    "1. Based on the transcription, provide feedback on the user's grammar, phrasing, and word choice.\n"
-                    "2. Based on the provided audio, comment on the user's pronunciation, rhythm, and intonation. Use the type 'pronunciation' for this feedback.\n"
-                    "Combine all feedback into a concise, helpful response."
-                )
 
                 messages = [
                     ChatMessage(role=MessageRole.USER, blocks=[
@@ -294,13 +291,12 @@ You are acting as the persona.
                 ]
                 structured_llm = self.llm.as_structured_llm(FeedbackResponse)
                 response = await structured_llm.achat(messages)
-                feedback_response = response.raw
-                if feedback_response and feedback_response.feedback:
-                    logger.info(f"Generated feedback from audio: {feedback_response.feedback}")
-                    feedbacks = feedback_response.feedback
+                logger.info(f"Generated feedback from audio: {response}")
+                feedbacks = response.raw.feedback
         except Exception as e:
             logger.error(f"Failed to generate feedback from audio: {e}", exc_info=True)
 
+        self.last_turn_feedback = feedbacks
         ctx.write_event_to_stream(FeedbackGenerated(feedbacks=feedbacks))
         return FeedbackGenerated(feedbacks=feedbacks)
 
