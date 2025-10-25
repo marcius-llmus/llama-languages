@@ -52,6 +52,41 @@ class ConversationWorkflow(Workflow):
         self.history: list[ChatMessage] = []
         self.last_turn_feedback: list = []
 
+    async def _gather_prompt_context(
+        self, language_profile_id: int, persona_id: int, practice_topic_id: int | None
+    ) -> dict[str, str]:
+        """
+        Fetches persona, language, and topic details to build a context dictionary.
+
+        This dictionary is used to format the system, transcription, and feedback
+        prompts with consistent contextual information for a given conversation turn.
+
+        Returns:
+            A dictionary containing `persona_prompt`, `target_language`, and
+            `practice_topic_description`.
+        """
+        persona = self.persona_service.get_persona(persona_id)
+        language_profile = self.language_profile_service.get_language_profile(
+            language_profile_id
+        )
+        practice_topic_description = (
+            self.language_profile_service.get_practice_topic_description_or_default(
+                topic_id=practice_topic_id
+            )
+        )
+
+        if not persona or not language_profile:
+            # This indicates a data integrity issue, as these IDs should be valid.
+            err_msg = f"Invalid persona_id ({persona_id}) or language_profile_id ({language_profile_id})."
+            logger.error(err_msg)
+            raise ValueError(err_msg)
+
+        return {
+            "persona_prompt": persona.prompt,
+            "target_language": language_profile.target_language,
+            "practice_topic_description": practice_topic_description,
+        }
+
     @step
     async def process_user_input(
             self, ctx: Context, ev: StartEvent
@@ -100,6 +135,13 @@ class ConversationWorkflow(Workflow):
     async def transcribe_and_analyse_audio_input(self, ctx: Context, ev: AudioInputReceived) -> UserMessageReady | AudioFeedbackRequired:
         """Transcribes the user's audio and passes the text to the conversational workflow."""
         logger.info("Step: transcribe_audio_input - Starting.")
+        prompt_context = await self._gather_prompt_context(
+            language_profile_id=ev.language_profile_id,
+            persona_id=ev.persona_id,
+            practice_topic_id=ev.practice_topic_id,
+        )
+        transcription_prompt = LITERAL_TRANSCRIPTION_PROMPT.format(**prompt_context)
+
         with tempfile.NamedTemporaryFile(
                 delete=True, suffix=".wav"
         ) as temp_audio_file:
@@ -109,7 +151,7 @@ class ConversationWorkflow(Workflow):
             messages = [
                 ChatMessage(role=MessageRole.USER, blocks=[
                     DocumentBlock(path=temp_audio_file.name, document_mimetype="audio/wav"),
-                    TextBlock(text=LITERAL_TRANSCRIPTION_PROMPT)
+                    TextBlock(text=transcription_prompt)
                 ])
             ]
             response_stream = await self.llm.astream_chat(messages)
@@ -147,16 +189,15 @@ class ConversationWorkflow(Workflow):
         logger.info(f"Step: construct_prompt - Starting for user message: '{ev.text[:50]}...'")
         self.history.append(ChatMessage(role=MessageRole.USER, content=ev.text))
 
-        persona = self.persona_service.get_persona(ev.persona_id)
+        prompt_context = await self._gather_prompt_context(
+            language_profile_id=ev.language_profile_id,
+            persona_id=ev.persona_id,
+            practice_topic_id=ev.practice_topic_id,
+        )
         app_settings = self.settings_service.get_settings()
 
-        practice_topic_description = self.language_profile_service.get_practice_topic_description_or_default(
-            topic_id=ev.practice_topic_id
-        )
-
         system_prompt = SYSTEM_META_PROMPT.format(
-            persona_prompt=persona.prompt,
-            practice_topic_description=practice_topic_description,
+            **prompt_context
         )
         if app_settings.evaluation_prompt:
             system_prompt += f"\n\n--- Global Feedback Rules ---\n{app_settings.evaluation_prompt}"
@@ -261,9 +302,15 @@ class ConversationWorkflow(Workflow):
     async def generate_feedback_from_text(self, ctx: Context, ev: TextFeedbackRequired) -> FeedbackGenerated:
         """Generates feedback for the user's text message in parallel."""
         logger.info("Step: generate_feedback_from_text - Starting.")
+        prompt_context = await self._gather_prompt_context(
+            language_profile_id=ev.language_profile_id,
+            persona_id=ev.persona_id,
+            practice_topic_id=ev.practice_topic_id,
+        )
         prompt_content = FEEDBACK_GENERATION_PROMPT.format(
             previous_feedback=str(self.last_turn_feedback),
             user_message_text=ev.user_message_text,
+            **prompt_context,
         )
         feedbacks = []
         try:
@@ -285,10 +332,16 @@ class ConversationWorkflow(Workflow):
         Generates feedback from audio in parallel by analyzing the provided transcription and audio.
         """
         logger.info("Step: generate_feedback_from_audio - Starting.")
+        prompt_context = await self._gather_prompt_context(
+            language_profile_id=ev.language_profile_id,
+            persona_id=ev.persona_id,
+            practice_topic_id=ev.practice_topic_id,
+        )
         feedbacks = []
         prompt_content = FEEDBACK_GENERATION_PROMPT.format(
             previous_feedback=str(self.last_turn_feedback),
             user_message_text=ev.user_message_text,
+            **prompt_context,
         )
         try:
             with tempfile.NamedTemporaryFile(delete=True, suffix=".wav") as temp_audio_file:
