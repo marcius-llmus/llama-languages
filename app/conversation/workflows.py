@@ -115,6 +115,14 @@ class ConversationWorkflow(Workflow):
                 ctx.write_event_to_stream(UserTranscriptionChunkGenerated(delta=r.delta))
             logger.info("Finished transcription stream from LLM.")
 
+        ctx.send_event(
+            AudioFeedbackRequired(
+                audio_bytes=ev.audio_bytes,
+                user_message_text=full_transcription,
+                persona_id=ev.persona_id,
+                language_profile_id=ev.language_profile_id,
+            )
+        )
 
         # the full transcription follows in the workflow to be sent to llm
         return UserMessageReady(
