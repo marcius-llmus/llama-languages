@@ -1,101 +1,149 @@
-<div id="settings-content" class="max-w-5xl mx-auto">
-    <div class="bg-white rounded-xl shadow-md p-8">
-        <form
-            hx-post="{{ url_for('update_settings') }}"
-            hx-target="#settings-content"
-            hx-swap="outerHTML"
-            class="space-y-6"
-        >
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">API Configuration</h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label for="gemini-api-key" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Gemini API Key
-                        </label>
-                        <div class="relative">
-                            <input
-                                type="password"
-                                id="gemini-api-key"
-                                name="gemini_api_key"
-                                class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                hx-preserve="true"
-                                placeholder="{{ 'Key is set. Enter a new key to overwrite.' if settings.gemini_api_key else 'Enter your Gemini API key' }}"
-                                value="{{ settings.gemini_api_key }}"
-                            />
-                            <button type="button" data-toggle-password-visibility class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 eye-icon" viewBox="0 0 16 16">
-                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
-                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 eye-slash-icon hidden" viewBox="0 0 16 16">
-                                    <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588M5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/>
-                                    <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+<form 
+    id="settings-form"
+    hx-post="{{ url_for('update_settings') }}"
+    hx-target="#settings-container"
+    hx-ext="form-json"
+    hx-swap="innerHTML"
+    class="bg-white p-8 rounded-xl shadow-md space-y-6"
+>
 
-                    <div>
-                        <label for="elevenlabs-api-key" class="block text-sm font-semibold text-gray-700 mb-2">
-                            ElevenLabs API Key
-                        </label>
-                        <div class="relative">
-                            <input
-                                type="password"
-                                id="elevenlabs-api-key"
-                                name="elevenlabs_api_key"
-                                class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                hx-preserve="true"
-                                placeholder="{{ 'Key is set. Enter a new key to overwrite.' if settings.elevenlabs_api_key else 'Enter your ElevenLabs API key' }}"
-                                value="{{ settings.elevenlabs_api_key }}"
-                            />
-                            <button type="button" data-toggle-password-visibility class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 eye-icon" viewBox="0 0 16 16">
-                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
-                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 eye-slash-icon hidden" viewBox="0 0 16 16">
-                                    <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588M5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/>
-                                    <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="voice-id" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Default Voice ID
-                        </label>
-                        <input
-                            type="text"
-                            id="voice-id"
-                            name="voice_id"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Enter ElevenLabs Voice ID"
-                            value="{{ settings.voice_id }}"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-200 pt-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Global Evaluation Prompt</h2>
-                <textarea
-                    id="evaluation-prompt"
-                    name="evaluation_prompt"
-                    rows="6"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Define the style and format of AI feedback (e.g., 'Provide feedback in two sections: Feedback and Suggestion. Be concise and encouraging.')"
-                >{{ settings.evaluation_prompt }}</textarea>
-            </div>
-
-            <div class="flex justify-end pt-4">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition">
-                    Save Settings
-                </button>
-            </div>
-        </form>
+    <!-- Gemini API Key -->
+    <div class="relative">
+        <label for="gemini_api_key" class="block text-sm font-semibold text-gray-700 mb-1">Gemini API Key</label>
+        <input type="password" name="gemini_api_key" id="gemini_api_key" 
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+               value="{{ settings.gemini_api_key or '' }}">
+        <button type="button" data-toggle-password-visibility class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5">
+            <!-- Eye icon for showing password -->
+            <svg class="h-6 w-6 text-gray-700 eye-icon" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <!-- Eye slash icon for hiding password -->
+            <svg class="h-6 w-6 text-gray-700 eye-slash-icon hidden" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064 7 9.542-7 .847 0 1.673.126 2.458.36M21 12c-1.274 4.057-5.064 7-9.542 7a10.05 10.05 0 01-1.458-.175M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+            </svg>
+        </button>
     </div>
-</div>
+
+    <!-- ElevenLabs API Key -->
+    <div class="relative">
+        <label for="elevenlabs_api_key" class="block text-sm font-semibold text-gray-700 mb-1">ElevenLabs API Key</label>
+        <input type="password" name="elevenlabs_api_key" id="elevenlabs_api_key" 
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+               value="{{ settings.elevenlabs_api_key or '' }}">
+        <button type="button" data-toggle-password-visibility class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5">
+            <!-- Eye icon for showing password -->
+            <svg class="h-6 w-6 text-gray-700 eye-icon" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <!-- Eye slash icon for hiding password -->
+            <svg class="h-6 w-6 text-gray-700 eye-slash-icon hidden" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064 7 9.542-7 .847 0 1.673.126 2.458.36M21 12c-1.274 4.057-5.064 7-9.542 7a10.05 10.05 0 01-1.458-.175M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Voice ID -->
+    <div>
+        <label for="voice_id" class="block text-sm font-semibold text-gray-700 mb-1">ElevenLabs Voice ID</label>
+        <input type="text" name="voice_id" id="voice_id" 
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+               value="{{ settings.voice_id or '' }}">
+    </div>
+
+    <!-- Evaluation Prompt -->
+    <div>
+        <label for="evaluation_prompt" class="block text-sm font-semibold text-gray-700 mb-1">Global Evaluation Prompt</label>
+        <textarea name="evaluation_prompt" id="evaluation_prompt" rows="6" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., You must always correct errors related to verb conjugation.">{{ settings.evaluation_prompt or '' }}</textarea>
+        <p class="text-xs text-gray-500 mt-1">This prompt is added to every feedback generation request to enforce global rules.</p>
+    </div>
+
+    <!-- Feedback Language -->
+    <div>
+        <label for="feedback_language" class="block text-sm font-semibold text-gray-700 mb-1">Feedback Language</label>
+        <input type="text" name="feedback_language" id="feedback_language" 
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+               value="{{ settings.feedback_language or '' }}"
+               placeholder="e.g., English">
+        <p class="text-xs text-gray-500 mt-1">The language in which feedback and corrections will be provided.</p>
+    </div>
+
+    <!-- Transcription Settings -->
+    <div class="border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Transcription Settings</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="transcription_model" class="block text-sm font-semibold text-gray-700 mb-1">Model Name</label>
+                <select name="transcription_settings.model" id="transcription_model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                    {% for model in GeminiModel %}
+                        <option value="{{ model.value }}" {% if settings.transcription_settings.model == model.value %}selected{% endif %}>
+                            {{ model.value }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="transcription_temperature" class="block text-sm font-semibold text-gray-700 mb-1">Temperature</label>
+                <input type="number" name="transcription_settings.temperature" id="transcription_temperature" step="0.01" min="0" max="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="{{ settings.transcription_settings.temperature }}" placeholder="e.g., 0.0">
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Settings for audio-to-text transcription. Low temperature (e.g., 0.0) is recommended for accuracy.</p>
+    </div>
+
+    <!-- Persona Response Settings -->
+    <div class="border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Persona Response Settings</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="persona_model" class="block text-sm font-semibold text-gray-700 mb-1">Model Name</label>
+                <select name="persona_settings.model" id="persona_model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                    {% for model in GeminiModel %}
+                        <option value="{{ model.value }}" {% if settings.persona_settings.model == model.value %}selected{% endif %}>
+                            {{ model.value }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="persona_temperature" class="block text-sm font-semibold text-gray-700 mb-1">Temperature</label>
+                <input type="number" name="persona_settings.temperature" id="persona_temperature" step="0.01" min="0" max="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="{{ settings.persona_settings.temperature }}" placeholder="e.g., 0.9">
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Settings for generating the AI persona's conversational responses. Higher temperature (e.g., 0.9) promotes creativity.</p>
+    </div>
+
+    <!-- Feedback Generation Settings -->
+    <div class="border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Feedback Generation Settings</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="feedback_model" class="block text-sm font-semibold text-gray-700 mb-1">Model Name</label>
+                <select name="feedback_settings.model" id="feedback_model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                    {% for model in GeminiModel %}
+                        <option value="{{ model.value }}" {% if settings.feedback_settings.model == model.value %}selected{% endif %}>
+                            {{ model.value }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="feedback_temperature" class="block text-sm font-semibold text-gray-700 mb-1">Temperature</label>
+                <input type="number" name="feedback_settings.temperature" id="feedback_temperature" step="0.01" min="0" max="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="{{ settings.feedback_settings.temperature }}" placeholder="e.g., 0.2">
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Settings for analyzing user input and generating feedback. Lower temperature (e.g., 0.2) ensures more deterministic and factual corrections.</p>
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex justify-end">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
+            Save Settings
+        </button>
+    </div>
+</form>

@@ -344,7 +344,6 @@ ignore
 diffs.md
 cache.*
 road_to_freedom/*
-TODO
 tailwindcss
 .idea/
 *.db

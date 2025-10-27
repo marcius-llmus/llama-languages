@@ -20,6 +20,18 @@
                        value="{{ language_profile.target_language }}">
             </div>
         </div>
+        <div>
+            <label for="persona_id-{{ language_profile.id }}" class="block text-sm font-semibold text-gray-700 mb-1">Practice Persona</label>
+            <select name="persona_id" id="persona_id-{{ language_profile.id }}" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                {% for persona in personas %}
+                    <option value="{{ persona.id }}"
+                            {% if language_profile.persona_id == persona.id %}selected{% endif %}>
+                        {{ persona.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="flex justify-end space-x-2">
              <button type="button" 
                 hx-get="{{ url_for('get_language_profile', profile_id=language_profile.id) }}"

@@ -10,7 +10,9 @@ class LanguageProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     target_language = Column(String, nullable=False)
+    persona_id = Column(Integer, ForeignKey("personas.id"), nullable=False, index=True)
 
+    persona = relationship("Persona", back_populates="language_profiles")
     practice_topics = relationship(
         "PracticeTopic",
         back_populates="language_profile",

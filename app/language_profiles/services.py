@@ -10,6 +10,7 @@ from app.language_profiles.schemas import (
     LanguageProfileUpdate,
     PracticeTopicCreate,
 )
+from app.personas.services import PersonaService
 
 
 class LanguageProfileService:
@@ -43,6 +44,20 @@ class LanguageProfileService:
     def delete_language_profile(self, *, profile_id: int) -> LanguageProfile | None:
         return self.language_profile_repository.delete(pk=profile_id)
 
+    def get_practice_topic_description_or_default(self, *, topic_id: int | None) -> str:
+        default_description = "an open conversation"
+        if not topic_id:
+            return default_description
+
+        topic = self.get_practice_topic(topic_id=topic_id)
+        if not topic:
+            return default_description
+
+        return topic.name
+
+    def get_practice_topic(self, *, topic_id: int) -> PracticeTopic | None:
+        return self.practice_topic_repository.get(pk=topic_id)
+
     def add_topic_to_profile(
         self, *, profile_id: int, topic_in: PracticeTopicCreate
     ) -> PracticeTopic:
@@ -55,10 +70,22 @@ class LanguageProfileService:
 
 
 class LanguageProfilePageService:
-    def __init__(self, language_profile_service: LanguageProfileService):
+    def __init__(
+        self,
+        language_profile_service: LanguageProfileService,
+        persona_service: PersonaService,
+    ):
         self.language_profile_service = language_profile_service
+        self.persona_service = persona_service
 
     def get_language_profiles_page_data(self) -> dict:
         return {
-            "language_profiles": self.language_profile_service.list_language_profiles()
+            "language_profiles": self.language_profile_service.list_language_profiles(),
+            "personas": self.persona_service.list_personas(),
+        }
+
+    def get_edit_language_profile_form_data(self, profile_id: int) -> dict:
+        return {
+            "language_profile": self.language_profile_service.get_language_profile(profile_id),
+            "personas": self.persona_service.list_personas(),
         }

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     GOOGLE_API_KEY: str
     ELEVENLABS_API_KEY: str
-    AUDIO_OUTPUT_DIR: str = "static/audio"
+    AUDIO_OUTPUT_DIR: str = "app/static/audio"
 
 
 settings = Settings()  # type: ignore
