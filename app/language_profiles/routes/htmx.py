@@ -58,10 +58,9 @@ async def delete_language_profile(
 async def view_edit_language_profile_form(
     request: Request,
     profile_id: int,
-    service: LanguageProfileService = Depends(get_language_profile_service),
+    service: LanguageProfilePageService = Depends(get_language_profile_page_service),
 ):
-    profile = service.get_language_profile(profile_id=profile_id)
-    return {"language_profile": profile}
+    return service.get_edit_language_profile_form_data(profile_id=profile_id)
 
 
 @router.patch("/{profile_id}", name="update_language_profile")

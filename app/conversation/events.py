@@ -3,24 +3,35 @@ from workflows.events import Event
 
 from app.conversation.schemas import Feedback
 
+
 class UserTranscriptionChunkGenerated(Event):
     """Event carrying a single token from the streaming transcription."""
 
     delta: str
 
 
+
 class AudioInputReceived(Event):
     """Indicates that an audio message has been received and is ready for transcription streaming."""
     audio_bytes: bytes
-    persona_id: int
-    language_profile_id: int
 
 
 class UserMessageReady(Event):
     """Indicates the user's message is processed (transcribed if needed) and ready for the LLM."""
     text: str
-    persona_id: int
-    language_profile_id: int
+
+
+class TextFeedbackRequired(Event):
+    """Event to trigger parallel feedback generation for a text message."""
+
+    user_message_text: str
+
+
+class AudioFeedbackRequired(Event):
+    """Event to trigger parallel feedback generation for an audio message."""
+
+    audio_bytes: bytes
+    user_message_text: str
 
 
 class PromptReady(Event):
@@ -29,14 +40,12 @@ class PromptReady(Event):
     messages: list[ChatMessage]
     voice_id: str | None
     user_message_text: str
-    persona_id: int
-    language_profile_id: int
 
 
 class FeedbackGenerated(Event):
     """Carries the feedback object for the user's last message."""
 
-    feedback: Feedback
+    feedbacks: list[Feedback]
 
 
 class AITextChunkGenerated(Event):
@@ -51,11 +60,9 @@ class FullResponseGenerated(Event):
     ai_response_text: str
     user_message_text: str
     audio_bytes: bytes
-    persona_id: int
-    language_profile_id: int
 
 
-class AIAudioReady(Event):
+class AIAudioSaved(Event):
     """Event carrying the URL to the generated audio file."""
 
     audio_url: str

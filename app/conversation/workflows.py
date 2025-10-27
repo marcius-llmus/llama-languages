@@ -5,12 +5,14 @@ import wave
 import logging
 
 from llama_index.core.llms import ChatMessage, DocumentBlock, MessageRole, TextBlock
-from llama_index.llms.google_genai import GoogleGenAI
 from workflows import Workflow, Context, step
 from workflows.events import StartEvent, StopEvent
 
 from app.clients.elevenlabs.elevenlabs_tts import ElevenLabsTTS
+from app.commons.factories import LLMFactory
+from app.conversation.schemas import FeedbackResponse
 from app.core.config import settings
+from app.conversation.prompts import FEEDBACK_GENERATION_PROMPT, LITERAL_TRANSCRIPTION_PROMPT, SYSTEM_META_PROMPT
 from app.language_profiles.services import LanguageProfileService
 from app.personas.services import PersonaService
 from app.settings.services import SettingsService
@@ -18,15 +20,16 @@ from app.settings.services import SettingsService
 from app.conversation.events import (
     AIAudioChunkGenerated,
     FeedbackGenerated,
-    AIAudioReady,
+    AIAudioSaved,
     PromptReady,
     FullResponseGenerated,
     AITextChunkGenerated,
     UserMessageReady,
     AudioInputReceived,
+    TextFeedbackRequired,
+    AudioFeedbackRequired,
     UserTranscriptionChunkGenerated,
 )
-from app.conversation.schemas import FeedbackResponse
 
 logger = logging.getLogger(__name__)
 
@@ -37,53 +40,105 @@ class ConversationWorkflow(Workflow):
         settings_service: SettingsService,
         persona_service: PersonaService,
         language_profile_service: LanguageProfileService,
-        llm: GoogleGenAI,
+        llm_factory: LLMFactory,
         elevenlabs_tts: ElevenLabsTTS,
     ):
         super().__init__()
         self.settings_service = settings_service
         self.persona_service = persona_service
         self.language_profile_service = language_profile_service
-        self.llm = llm
+        self.llm_factory = llm_factory
         self.elevenlabs_tts = elevenlabs_tts
         self.history: list[ChatMessage] = []
+        self.last_turn_feedback: list = []
+
+    async def _gather_prompt_context(
+        self, ctx: Context
+    ) -> dict[str, str]:
+        """
+        Fetches persona, language, topic, and feedback language details to build a context dictionary.
+
+        This dictionary is used to format the system, transcription, and feedback
+        prompts with consistent contextual information for a given conversation turn.
+
+        Returns:
+            A dictionary containing `persona_prompt`, `target_language`,
+            `practice_topic_description`, and `feedback_language`.
+        """
+        turn_context = await ctx.store.get("turn_context")
+        language_profile_id = turn_context["language_profile_id"]
+        persona_id = turn_context["persona_id"]
+        practice_topic_id = turn_context["practice_topic_id"]
+
+        persona = self.persona_service.get_persona(persona_id)
+        language_profile = self.language_profile_service.get_language_profile(
+            language_profile_id
+        )
+        practice_topic_description = (
+            self.language_profile_service.get_practice_topic_description_or_default(
+                topic_id=practice_topic_id
+            )
+        )
+        feedback_language = self.settings_service.get_feedback_language()
+
+        if not persona or not language_profile:
+            # This indicates a data integrity issue, as these IDs should be valid.
+            err_msg = f"Invalid persona_id ({persona_id}) or language_profile_id ({language_profile_id})."
+            logger.error(err_msg)
+            raise ValueError(err_msg)
+
+        return {
+            "persona_prompt": persona.prompt,
+            "target_language": language_profile.target_language,
+            "practice_topic_description": practice_topic_description,
+            "feedback_language": feedback_language,
+        }
 
     @step
     async def process_user_input(
             self, ctx: Context, ev: StartEvent
-    ) -> UserMessageReady | AudioInputReceived:
+    ) -> UserMessageReady | AudioInputReceived | TextFeedbackRequired:
         """
         Acts as a branching step.
         - For text input, it passes the message to the conversational workflow.
         - For audio input, it passes the bytes to the direct transcription-to-speech workflow.
         """
         logger.info("Step: process_user_input - Starting.")
+        async with ctx.store.edit_state() as state:
+            state["turn_context"] = {
+                "persona_id": ev.input["persona_id"],
+                "language_profile_id": ev.input["language_profile_id"],
+                "practice_topic_id": ev.input["practice_topic_id"],
+            }
         user_input: str | bytes = ev.input["user_message_data"]
-        persona_id: int = ev.input["persona_id"]
-        language_profile_id: int = ev.input["language_profile_id"]
 
         if isinstance(user_input, str):
-            return UserMessageReady(
-                text=user_input,
-                persona_id=persona_id,
-                language_profile_id=language_profile_id,
+            ctx.send_event(
+                TextFeedbackRequired(user_message_text=user_input)
             )
+            return UserMessageReady(text=user_input)
         elif isinstance(user_input, bytes):
             logger.info("Input is audio. Emitting AudioInputReceived.")
-            return AudioInputReceived(
-                audio_bytes=user_input,
-                persona_id=persona_id,
-                language_profile_id=language_profile_id,
-            )
+            # Feedback for audio is triggered after transcription is complete.
+            return AudioInputReceived(audio_bytes=user_input)
         else:
             err_msg = f"Unsupported user input type: {type(user_input)}"
             logger.error(err_msg)
             raise ValueError(err_msg)
 
     @step
-    async def transcribe_audio_input(self, ctx: Context, ev: AudioInputReceived) -> UserMessageReady:
+    async def transcribe_and_analyse_audio_input(self, ctx: Context, ev: AudioInputReceived) -> UserMessageReady | AudioFeedbackRequired:
         """Transcribes the user's audio and passes the text to the conversational workflow."""
         logger.info("Step: transcribe_audio_input - Starting.")
+        prompt_context = await self._gather_prompt_context(ctx)
+        transcription_prompt = LITERAL_TRANSCRIPTION_PROMPT.format(**prompt_context)
+        app_settings = self.settings_service.get_settings()
+
+        llm = self.llm_factory.create(
+            model=app_settings.transcription_settings.model,
+            temperature=app_settings.transcription_settings.temperature,
+        )
+
         with tempfile.NamedTemporaryFile(
                 delete=True, suffix=".wav"
         ) as temp_audio_file:
@@ -93,10 +148,10 @@ class ConversationWorkflow(Workflow):
             messages = [
                 ChatMessage(role=MessageRole.USER, blocks=[
                     DocumentBlock(path=temp_audio_file.name, document_mimetype="audio/wav"),
-                    TextBlock(text="Transcribe this audio.")
+                    TextBlock(text=transcription_prompt)
                 ])
             ]
-            response_stream = await self.llm.astream_chat(messages)
+            response_stream = await llm.astream_chat(messages)
 
             # first we get transcription and the chunks of transcription we send to user
             full_transcription = ""
@@ -105,12 +160,15 @@ class ConversationWorkflow(Workflow):
                 ctx.write_event_to_stream(UserTranscriptionChunkGenerated(delta=r.delta))
             logger.info("Finished transcription stream from LLM.")
 
-        # the full transcription follows in the workflow to be sent to llm
-        return UserMessageReady(
-            text=full_transcription,
-            persona_id=ev.persona_id,
-            language_profile_id=ev.language_profile_id,
+        ctx.send_event(
+            AudioFeedbackRequired(
+                audio_bytes=ev.audio_bytes,
+                user_message_text=full_transcription,
+            )
         )
+
+        # the full transcription follows in the workflow to be sent to llm
+        return UserMessageReady(text=full_transcription)
 
     @step
     async def construct_prompt(self, ctx: Context, ev: UserMessageReady) -> PromptReady:
@@ -120,16 +178,14 @@ class ConversationWorkflow(Workflow):
         logger.info(f"Step: construct_prompt - Starting for user message: '{ev.text[:50]}...'")
         self.history.append(ChatMessage(role=MessageRole.USER, content=ev.text))
 
-        persona = self.persona_service.get_persona(ev.persona_id)
+        prompt_context = await self._gather_prompt_context(ctx)
         app_settings = self.settings_service.get_settings()
 
-        system_prompt = f"""
-Persona: {persona.prompt}
-Global Feedback Rules: {app_settings.evaluation_prompt}
----
-You are acting as the persona.
-"""
-
+        system_prompt = SYSTEM_META_PROMPT.format(
+            **prompt_context
+        )
+        if app_settings.evaluation_prompt:
+            system_prompt += f"\n\n--- Global Feedback Rules ---\n{app_settings.evaluation_prompt}"
         messages = [
             ChatMessage(role=MessageRole.SYSTEM, content=system_prompt.strip())
         ] + self.history
@@ -139,8 +195,6 @@ You are acting as the persona.
             messages=messages,
             voice_id=app_settings.voice_id,
             user_message_text=ev.text,
-            persona_id=ev.persona_id,
-            language_profile_id=ev.language_profile_id,
         )
 
     @step
@@ -152,7 +206,13 @@ You are acting as the persona.
         """
         logger.info("Step: stream_ai_response - Starting.")
 
-        response_stream = await self.llm.astream_chat(ev.messages)
+        app_settings = self.settings_service.get_settings()
+        llm = self.llm_factory.create(
+            model=app_settings.persona_settings.model,
+            temperature=app_settings.persona_settings.temperature,
+        )
+
+        response_stream = await llm.astream_chat(ev.messages)
 
         full_response_text = ""
 
@@ -191,73 +251,111 @@ You are acting as the persona.
             ai_response_text=full_response_text,
             user_message_text=ev.user_message_text,
             audio_bytes=all_audio_bytes,
-            persona_id=ev.persona_id,
-            language_profile_id=ev.language_profile_id,
         )
 
     @step
-    async def generate_feedback(self, ctx: Context, ev: FullResponseGenerated) -> StopEvent:
-        """Generates feedback for the user's message."""
-        logger.info("Step: generate_feedback - Starting.")
+    async def save_audio(
+        self, ctx: Context, ev: FullResponseGenerated
+    ) -> AIAudioSaved:
+        """
+        Saves the complete audio bytes to a file and passes data to the feedback step.
+        """
+        logger.info("Step: save_audio - Starting.")
+        audio_url = None
+        if ev.audio_bytes:
+            output_dir = settings.AUDIO_OUTPUT_DIR
+            os.makedirs(output_dir, exist_ok=True)
+            file_name = f"{uuid.uuid4()}.wav"
+            file_path = os.path.join(output_dir, file_name)
 
-        persona = self.persona_service.get_persona(ev.persona_id)
-        app_settings = self.settings_service.get_settings()
+            with wave.open(file_path, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)  # 16-bit PCM
+                wf.setframerate(24000)
+                wf.writeframes(ev.audio_bytes)
+            audio_url = f"/static/audio/{file_name}"
+            logger.info(f"Audio saved to {file_path}. URL: {audio_url}")
 
-        feedback_system_prompt = f"""
-You are an AI language coach. Your task is to provide feedback on a user's message.
-The user is practicing a language.
-You have been provided with the user's message and the conversational response that was given.
-Analyze the user's message and provide feedback based on the global feedback rules.
-Do not generate a conversational response. Only generate feedback.
+            ctx.write_event_to_stream(AIAudioSaved(audio_url=audio_url))
+            logger.info("Audio saved event dispatched.")
+        else:
+            logger.info("No audio bytes to save.")
 
-Persona of conversational partner: {persona.prompt}
-Global Feedback Rules: {app_settings.evaluation_prompt}
----
-User's message: "{ev.user_message_text}"
-Conversational response given: "{ev.ai_response_text}"
----
-Now, provide feedback on the user's message.
-"""
-        messages = [
-            ChatMessage(role=MessageRole.SYSTEM, content=feedback_system_prompt.strip()),
-            ChatMessage(role=MessageRole.USER, content="Provide feedback now."),
-        ]
-
-        try:
-            structured_llm = self.llm.as_structured_llm(FeedbackResponse)
-            feedback_response = await structured_llm.achat(messages)
-
-            if feedback_response and feedback_response.feedback:
-                logger.info(f"Generated feedback: {feedback_response.feedback}")
-                for item in feedback_response.feedback:
-                    ctx.write_event_to_stream(FeedbackGenerated(feedback=item))
-        except Exception as e:
-            logger.error(f"Failed to generate feedback: {e}", exc_info=True)
-
-        logger.info("Step: generate_feedback - Finished.")
-        return StopEvent()
+        return AIAudioSaved(audio_url=audio_url)
 
     @step
-    async def save_audio(self, ctx: Context, ev: FullResponseGenerated) -> StopEvent:
-        """Saves the complete audio bytes to a file and dispatches the URL."""
-        logger.info("Step: save_audio - Starting.")
-        if not ev.audio_bytes:
-            logger.info("No audio bytes to save. Stopping workflow.")
-            return StopEvent()
+    async def generate_feedback_from_text(self, ctx: Context, ev: TextFeedbackRequired) -> FeedbackGenerated:
+        """Generates feedback for the user's text message in parallel."""
+        logger.info("Step: generate_feedback_from_text - Starting.")
+        prompt_context = await self._gather_prompt_context(ctx)
+        app_settings = self.settings_service.get_settings()
+        llm = self.llm_factory.create(
+            model=app_settings.feedback_settings.model,
+            temperature=app_settings.feedback_settings.temperature,
+        )
+        prompt_content = FEEDBACK_GENERATION_PROMPT.format(
+            previous_feedback=str(self.last_turn_feedback),
+            user_message_text=ev.user_message_text,
+            **prompt_context,
+        )
+        feedbacks = []
+        try:
+            structured_llm = llm.as_structured_llm(FeedbackResponse)
+            messages = [ChatMessage(role=MessageRole.USER, content=prompt_content)]
+            response = await structured_llm.achat(messages)
+            logger.info(f"Generated feedback: {response}")
+            feedbacks = response.raw.feedback
+        except Exception as e:
+            logger.error(f"Failed to generate feedback from text: {e}", exc_info=True)
 
-        output_dir = settings.AUDIO_OUTPUT_DIR
-        os.makedirs(output_dir, exist_ok=True)
-        file_name = f"{uuid.uuid4()}.wav"
-        file_path = os.path.join(output_dir, file_name)
+        self.last_turn_feedback = feedbacks
+        ctx.write_event_to_stream(FeedbackGenerated(feedbacks=feedbacks))
+        return FeedbackGenerated(feedbacks=feedbacks)
 
-        with wave.open(file_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)  # 16-bit PCM
-            wf.setframerate(24000)
-            wf.writeframes(ev.audio_bytes)
-        audio_url = f"/static/audio/{file_name}"
-        logger.info(f"Audio saved to {file_path}. URL: {audio_url}")
+    @step
+    async def generate_feedback_from_audio(self, ctx: Context, ev: AudioFeedbackRequired) -> FeedbackGenerated:
+        """
+        Generates feedback from audio in parallel by analyzing the provided transcription and audio.
+        """
+        logger.info("Step: generate_feedback_from_audio - Starting.")
+        prompt_context = await self._gather_prompt_context(ctx)
+        app_settings = self.settings_service.get_settings()
+        llm = self.llm_factory.create(
+            model=app_settings.feedback_settings.model,
+            temperature=app_settings.feedback_settings.temperature,
+        )
+        feedbacks = []
+        prompt_content = FEEDBACK_GENERATION_PROMPT.format(
+            previous_feedback=str(self.last_turn_feedback),
+            user_message_text=ev.user_message_text,
+            **prompt_context,
+        )
+        try:
+            with tempfile.NamedTemporaryFile(delete=True, suffix=".wav") as temp_audio_file:
+                temp_audio_file.write(ev.audio_bytes)
+                temp_audio_file.flush()
 
-        ctx.write_event_to_stream(AIAudioReady(audio_url=audio_url))
-        logger.info("Audio saved. Stopping workflow for this turn.")
+                messages = [
+                    ChatMessage(role=MessageRole.USER, blocks=[
+                        DocumentBlock(path=temp_audio_file.name, document_mimetype="audio/wav"),
+                        TextBlock(text=prompt_content)
+                    ])
+                ]
+                structured_llm = llm.as_structured_llm(FeedbackResponse)
+                response = await structured_llm.achat(messages)
+                logger.info(f"Generated feedback from audio: {response}")
+                feedbacks = response.raw.feedback
+        except Exception as e:
+            logger.error(f"Failed to generate feedback from audio: {e}", exc_info=True)
+
+        self.last_turn_feedback = feedbacks
+        ctx.write_event_to_stream(FeedbackGenerated(feedbacks=feedbacks))
+        return FeedbackGenerated(feedbacks=feedbacks)
+
+    @step
+    async def gather(self, ctx: Context, ev: AIAudioSaved | FeedbackGenerated) -> StopEvent | None:
+        data = ctx.collect_events(ev, [AIAudioSaved, FeedbackGenerated])
+        if data is None:
+            return None
+
         return StopEvent()

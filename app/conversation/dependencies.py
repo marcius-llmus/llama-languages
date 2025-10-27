@@ -1,11 +1,10 @@
 from fastapi import Depends
 from typing import cast
-from llama_index.llms.google_genai import GoogleGenAI
 
 from app.clients.elevenlabs.elevenlabs_client import PatchedAsyncElevenLabs
 from app.clients.elevenlabs.elevenlabs_tts import ElevenLabsTTS
 from app.clients.elevenlabs.patched_elevenlabs import AsyncRealtimeTextToSpeechClient
-from app.core.config import settings
+from app.commons.factories import LLMFactory
 from app.language_profiles.dependencies import get_language_profile_service
 from app.language_profiles.services import LanguageProfileService
 from app.personas.dependencies import get_persona_service
@@ -16,12 +15,17 @@ from app.conversation.services import ConversationService
 from app.conversation.workflows import ConversationWorkflow
 
 
-def get_gemini_llm() -> GoogleGenAI:
-    return GoogleGenAI(model="gemini-2.5-flash", api_key=settings.GOOGLE_API_KEY)
+def get_llm_factory(
+    settings_service: SettingsService = Depends(get_settings_service),
+) -> LLMFactory:
+    return LLMFactory(settings_service=settings_service)
 
 
-def get_elevenlabs_async_client() -> PatchedAsyncElevenLabs:
-    return PatchedAsyncElevenLabs(api_key=settings.ELEVENLABS_API_KEY)
+def get_elevenlabs_async_client(
+    settings_service: SettingsService = Depends(get_settings_service),
+) -> PatchedAsyncElevenLabs:
+    app_settings = settings_service.get_settings()
+    return PatchedAsyncElevenLabs(api_key=app_settings.elevenlabs_api_key)
 
 
 def get_realtime_tts_client(
@@ -50,14 +54,14 @@ def get_conversation_workflow(
     language_profile_service: LanguageProfileService = Depends(
         get_language_profile_service
     ),
-    llm: GoogleGenAI = Depends(get_gemini_llm),
+    llm_factory: LLMFactory = Depends(get_llm_factory),
     elevenlabs_tts: ElevenLabsTTS = Depends(get_elevenlabs_tts_client),
 ) -> ConversationWorkflow:
     return ConversationWorkflow(
         settings_service=settings_service,
         persona_service=persona_service,
         language_profile_service=language_profile_service,
-        llm=llm,
+        llm_factory=llm_factory,
         elevenlabs_tts=elevenlabs_tts,
     )
 
