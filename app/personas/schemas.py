@@ -10,8 +10,9 @@ class PersonaCreate(PersonaBase):
     pass
 
 
-class PersonaUpdate(PersonaBase):
-    pass
+class PersonaUpdate(BaseModel):
+    name: str | None = None
+    prompt: str | None = None
 
 
 class PersonaRead(PersonaBase):

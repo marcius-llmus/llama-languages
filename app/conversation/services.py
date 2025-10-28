@@ -49,3 +49,12 @@ class ConversationService:
                 yield {"type": ConversationEventType.USER_TRANSCRIPTION_CHUNK_GENERATED, "data": event.delta}
             else:
                 logger.warning(f"Unknown event type: {event}")
+
+        try:
+            await handler
+        except Exception as e:
+            logger.error(f"Workflow execution failed: {e}", exc_info=True)
+            yield {
+                "type": ConversationEventType.WORKFLOW_ERROR,
+                "data": {"message": "An unexpected error occurred: {}".format(e)},
+            }

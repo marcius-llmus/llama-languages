@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
@@ -10,6 +11,7 @@ from app.conversation.routes.htmx import router as conversation_htmx_router
 from app.language_profiles.routes.htmx import router as language_profiles_router
 from app.personas.routes.htmx import router as personas_router
 from app.settings.routes.htmx import router as settings_router
+from app.core.db import engine
 
 # Configure logging
 logging.basicConfig(
@@ -17,7 +19,26 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-app = FastAPI()
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting application initialization...")
+    from sqlalchemy.orm import Session
+    from app.settings.utils import initialize_application_settings
+    
+    with Session(engine) as db:
+        initialize_application_settings(db)
+
+    logger.info("=" * 70)
+    logger.info("Access the application in your browser at the appropriate localhost or audio input won't work")
+    logger.info("=" * 70)
+
+    yield
+    logger.info("Application shutdown.")
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 

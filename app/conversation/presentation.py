@@ -32,6 +32,7 @@ class WebSocketOrchestrator:
             ConversationEventType.AI_AUDIO_CHUNK_GENERATED: self._send_ai_audio_chunk,
             ConversationEventType.AI_AUDIO_READY: self._render_ai_audio_player,
             ConversationEventType.USER_TRANSCRIPTION_CHUNK_GENERATED: self._render_user_transcription_chunk,
+            ConversationEventType.WORKFLOW_ERROR: self._render_workflow_error,
         }
 
     async def _process_chunk(
@@ -179,4 +180,12 @@ class WebSocketOrchestrator:
             template = templates.get_template(
                 "conversation/partials/user_message_streaming_token.html"
             ).render({"token": data, "turn_id": turn_id})
+        await self.ws_manager.send_html(template)
+
+    async def _render_workflow_error(
+        self, data: Any, turn_id: str
+    ):
+        template = templates.get_template(
+            "conversation/partials/workflow_error.html"
+        ).render({"message": data["message"], "turn_id": turn_id})
         await self.ws_manager.send_html(template)

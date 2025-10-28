@@ -1,5 +1,3 @@
-SEE WHY ERRORS IN WORKFLOWS AREN'T PROPAGATING
--
 add logs (what llm is bein used?)
 -
 add markdown to ai responses
@@ -8,6 +6,5 @@ db connection always open in wss
 -
 should be gemini factory specifically and should map pydantic input to gemini models
 -
-save has not feedback in settings (could add loading to buttons)
+save settings action has no feedback in settings (could add loading to buttons)
 -
-

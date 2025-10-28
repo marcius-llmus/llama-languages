@@ -7,10 +7,10 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    DATABASE_URL: str
-    GOOGLE_API_KEY: str
-    ELEVENLABS_API_KEY: str
+    DATABASE_URL: str = "sqlite:///./database.db"
     AUDIO_OUTPUT_DIR: str = "app/static/audio"
+    PERSONAS_SEED_PATH: str = "app/seed/personas.yaml"
+    LANGUAGE_PROFILES_SEED_PATH: str = "app/seed/language_profiles.yaml"
 
 
 settings = Settings()  # type: ignore
