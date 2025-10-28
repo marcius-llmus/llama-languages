@@ -1,12 +1,16 @@
+import logging
 from app.commons.enums import GeminiModel
+from app.language_profiles.services import LanguageProfileService
+from app.personas.services import PersonaService
 from app.settings.models import LLMSettings, Settings
 from app.settings.repositories import LLMSettingsRepository, SettingsRepository
 from app.settings.schemas import (
     LLMSettingsCreate,
     LLMSettingsUpdate,
-    SettingsCreate,
     SettingsUpdate,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsService:
@@ -14,39 +18,19 @@ class SettingsService:
         self,
         settings_repository: SettingsRepository,
         llm_settings_service: "LLMSettingsService",
+        persona_service: PersonaService,
+        language_profile_service: LanguageProfileService,
     ):
         self.settings_repository = settings_repository
         self.llm_settings_service = llm_settings_service
+        self.persona_service = persona_service
+        self.language_profile_service = language_profile_service
 
     def get_settings(self) -> Settings:
-        settings = self.settings_repository.get(pk=1)  # hard coded, local host only
-        if not settings:
-            transcription_settings = self.llm_settings_service.get_or_create(
-                llm_settings_id=None,
-                settings_in=LLMSettingsCreate(
-                    model=GeminiModel.GEMINI_2_5_FLASH, temperature=0.0
-                ),
-            )
-            persona_settings = self.llm_settings_service.get_or_create(
-                llm_settings_id=None,
-                settings_in=LLMSettingsCreate(
-                    model=GeminiModel.GEMINI_2_5_PRO, temperature=0.7
-                ),
-            )
-            feedback_settings = self.llm_settings_service.get_or_create(
-                llm_settings_id=None,
-                settings_in=LLMSettingsCreate(
-                    model=GeminiModel.GEMINI_2_5_PRO, temperature=0.5
-                ),
-            )
-
-            settings_in = SettingsCreate(
-                transcription_settings_id=transcription_settings.id,
-                persona_settings_id=persona_settings.id,
-                feedback_settings_id=feedback_settings.id,
-            )
-            settings = self.settings_repository.create(obj_in=settings_in)
-        return settings
+        app_settings = self.settings_repository.get(pk=1)  # hard coded, local host only
+        if not app_settings:
+            raise RuntimeError("Settings not initialized. Run application startup first.")
+        return app_settings
 
     def update_settings(self, *, settings_in: SettingsUpdate) -> Settings:
         db_obj = self.get_settings()
@@ -71,8 +55,8 @@ class SettingsService:
         return self.settings_repository.update(db_obj=db_obj, obj_in=settings_in)
 
     def get_feedback_language(self) -> str:
-        settings = self.get_settings()
-        return settings.feedback_language or "English"
+        app_settings = self.get_settings()
+        return app_settings.feedback_language or "English"
 
 
 class LLMSettingsService:

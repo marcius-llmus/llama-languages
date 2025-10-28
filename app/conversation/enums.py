@@ -15,3 +15,4 @@ class ConversationEventType(StrEnum):
     AUDIO_MESSAGE = "audio_message"
     USER_TRANSCRIPTION_CHUNK_GENERATED = "user_transcription_chunk_generated"
     FEEDBACK_GENERATED = "feedback_generated"
+    WORKFLOW_ERROR = "workflow_error"

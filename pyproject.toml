@@ -30,12 +30,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest<8.0.0,>=7.4.3",
+    "pytest>=7.4.3,<8.0.0",
     "mypy<2.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.2.2",
     "pre-commit<4.0.0,>=3.6.2",
     "types-passlib<2.0.0.0,>=1.7.7.20240106",
     "coverage<8.0.0,>=7.4.3",
+    "pytest-mock>=3.15.1",
+    "pytest-asyncio>=0.23.8",
 ]
 
 [tool.uv]

@@ -10,19 +10,19 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
                 </svg>
                 <span class="font-medium text-gray-700">Language:</span>
-                <span class="text-gray-900">{{ language_profile.target_language }}</span>
+                <span class="text-gray-900 truncate max-w-[120px]" title="{{ language_profile.target_language }}">{{ language_profile.target_language }}</span>
             </div>
             <div class="flex items-center space-x-2 min-w-0">
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
                 <span class="font-medium text-gray-700">Persona:</span>
-                <span class="text-gray-900">{{ language_profile.persona.name }}</span>
+                <span class="text-gray-900 truncate max-w-[150px]" title="{{ language_profile.persona.name }}">{{ language_profile.persona.name }}</span>
             </div>
             <div class="flex items-center space-x-2 min-w-0">
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                 <span class="font-medium text-gray-700">Topic:</span>
-                <select id="practice-topic-select" name="practice_topic_id" class="text-gray-900 border-none bg-transparent focus:ring-0">
+                <select id="practice-topic-select" name="practice_topic_id" class="text-gray-900 border-none bg-transparent focus:ring-0 truncate max-w-[180px]">
                     <option value="">Open Conversation</option>
                     {% for topic in language_profile.practice_topics %}
                         <option value="{{ topic.id }}">{{ topic.name }}</option>
@@ -116,6 +116,7 @@
         let streamingSourceQueue = [];
         let isStreaming = false;
         let nextPlayTime = 0;
+        
 
         // --- Unified WebSocket Message Sender ---
         function sendWsMessage(messagePayload) {
@@ -161,12 +162,18 @@
             socketWrapper = evt.detail.socketWrapper;
         });
         
-        conversationContainer.addEventListener('htmx:wsBeforeMessage', function(evt) {
+        conversationContainer.addEventListener('htmx:wsBeforeMessage', async function(evt) {
             if (evt.detail.message instanceof Blob) {
                 evt.preventDefault();
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
+                
+                // Resume AudioContext if suspended (browser autoplay policy)
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
                 const reader = new FileReader();
                 reader.onload = function() {
                     streamingAudioQueue.push(reader.result);
@@ -179,6 +186,7 @@
         });
 
         function processNextStreamingAudioChunk() {
+            
             if (streamingAudioQueue.length === 0) {
                 isStreaming = false;
                 return;
@@ -213,6 +221,8 @@
                 micButton.disabled = false;
                 messageInput.placeholder = 'Type your message in {{ language_profile.target_language }}...';
                 messageInput.focus();
+                // Reset state for the next audio stream
+                nextPlayTime = 0;
             }
         }
 

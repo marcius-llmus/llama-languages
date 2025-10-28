@@ -16,12 +16,13 @@ LITERAL_TRANSCRIPTION_PROMPT = f"""
 You are transcribing audio from a language learner.
 {PROMPT_CONTEXT_BLOCK}
 **Instructions:**
-Provide a literal, verbatim transcription of their speech.
-Do not correct any grammatical errors, mispronunciations, or phrasing.
-The raw, uncorrected text is required for accurate feedback.
-Transcribe this audio, even parts that don't look like words.
-Make sure to transcribe the whole audio, every part of it.
-Even if the user repeats words, gets nervous, or stutters, everything must be transcribed exactly as it sounds.
+Output ONLY the verbatim transcription of what you hear in the audio. Nothing else.
+Do NOT add any commentary, explanations, or conversational text.
+Do NOT correct grammatical errors, mispronunciations, or phrasing.
+Transcribe every word exactly as spoken, including repetitions, hesitations, and stutters.
+If you hear unintelligible sounds or partial words, transcribe them phonetically.
+
+Start your response immediately with the first word you hear. Do not write anything before the transcription.
 """
 
 FEEDBACK_GENERATION_PROMPT = f"""

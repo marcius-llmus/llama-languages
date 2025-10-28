@@ -28,8 +28,10 @@ class LanguageProfileCreate(LanguageProfileBase):
     pass
 
 
-class LanguageProfileUpdate(LanguageProfileBase):
-    pass
+class LanguageProfileUpdate(BaseModel):
+    name: str | None = None
+    target_language: str | None = None
+    persona_id: int | None = None
 
 
 class LanguageProfileRead(LanguageProfileBase):
